@@ -1,5 +1,5 @@
-from Geomathematik.Coordinates import *
-from Geomathematik.Angles import *
+from Coordinates import *
+from Angles import *
 
 A = CartesianCoordinate(9.64, 40.24)
 B = CartesianCoordinate(32.69, 22.25)

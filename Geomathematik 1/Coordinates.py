@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 
-from Geomathematik.Angles import Angle
+from Angles import Angle
 
 
 class CartesianCoordinate:
