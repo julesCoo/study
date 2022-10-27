@@ -1,4 +1,8 @@
-from lib import Point, Line, Angle, Plot, HA2, gon, HA1
+from lib.Point import Point
+from lib.Line import Line
+from lib.Angle import Angle, gon
+from lib.Plot import Plot
+from lib.Algorithms import HA1, HA2, Bogenschnitt
 
 A = Point(2825.31, 4538.20)
 B = Point(2887.49, 4561.47)
@@ -9,8 +13,9 @@ sA2 = 57.54
 sB1 = 53.95
 sB2 = 46.09
 
-# TODO: finde N1 und N2
 # A,N1,B,N2 im Uhrzeigersinn!
+N1 = Bogenschnitt(B, A, sB1, sA1)
+N2 = Bogenschnitt(A, B, sA2, sB2)
 
 p = Plot(Point(2700, 4400), Point(3000, 4700))
 p.add_point(A, "A")
@@ -19,4 +24,9 @@ p.add_circle(A, sA1)
 p.add_circle(A, sA2)
 p.add_circle(B, sB1)
 p.add_circle(B, sB2)
+p.add_point(N1, "N1")
+p.add_point(N2, "N2")
 p.save("Geomathematik1/Beispiel 12.png")
+
+print("N1 =", N1)
+print("N2 =", N2)

@@ -1,4 +1,8 @@
-from lib import Point, Line, Angle, Plot, HA2, gon, HA1
+from lib.Point import Point
+from lib.Line import Line
+from lib.Angle import Angle, gon
+from lib.Plot import Plot
+from lib.Algorithms import HA1, HA2
 
 P1 = Point(12.21, -11.35)
 P2 = Point(5.20, 40.93)

@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import Optional
 from matplotlib import pyplot as plt
-from Algorithms import HA1
-from Point import Point
-from Line import Line
+from lib.Algorithms import HA1
+from lib.Point import Point
+from lib.Line import Line
 
 
 class Plot:

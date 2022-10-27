@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional
-from Point import Point
-from Angle import Angle
+from lib.Point import Point
+from lib.Angle import Angle
 
 
 class Line:

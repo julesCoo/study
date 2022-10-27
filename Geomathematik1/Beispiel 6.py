@@ -1,20 +1,23 @@
-from __future__ import annotations
-from lib import Point, Line, Angle, Plot, HA2, gon, HA1
+from lib.Point import Point
+from lib.Line import Line
+from lib.Angle import Angle, gon
+from lib.Plot import Plot
+from lib.Algorithms import HA1, HA2
 
 A = Point(-94.10, -85.66)
 B = Point(120.95, 115.25)
 C = Point(38.14, 151.63)
 
-nuAB, sAB = HA2(A, B)
-nuBC, sBC = HA2(B, C)
+sAB, vAB = HA2(A, B)
+sBC, vBC = HA2(B, C)
 
-nuBA = nuAB.reverse()
+vBA = vAB.reverse()
 
 # Satz des Thales
 gamma = gon(100)
 
 # Beta zwischen BA und BA
-beta = nuBA - nuBC
+beta = vBA - vBC
 
 # Delta von Winkelsumme
 delta = gon(200) - gamma - beta
@@ -27,11 +30,11 @@ sBD = sBC * gamma.sin() / delta.sin()
 sBM = sBD / 2
 
 # M und D liegen auf der Gerade AB
-nuBD = nuBA
-nuBM = nuBA
+vBD = vBA
+vBM = vBA
 
-D = HA1(B, nuBD, sBD)
-M = HA1(B, nuBM, sBM)
+D = HA1(B, vBD, sBD)
+M = HA1(B, vBM, sBM)
 
 p = Plot(Point(-200, -200), Point(200, 200))
 p.add_point(A, "A")
@@ -44,11 +47,11 @@ p.add_circle(M, M.distance_to(D))
 p.save("Geomathematik1/Beispiel 6.png")
 
 
-print("nuAB =", nuAB)
-print("nuBC =", nuBC)
-print("nuBA =", nuBA)
-print("nuBD =", nuBD)
-print("nuBM =", nuBM)
+print("vAB =", vAB)
+print("vBC =", vBC)
+print("vBA =", vBA)
+print("vBD =", vBD)
+print("vBM =", vBM)
 print("sAB =", sAB)
 print("sBC =", sBC)
 print("sBD =", sBD)
