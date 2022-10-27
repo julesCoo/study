@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Optional
+from lib.Algorithms import Vorwärtsschnitt_Richtung
 from lib.Point import Point
 from lib.Angle import Angle
 
@@ -20,14 +21,6 @@ class Line:
         if self.angle.rad == other.angle.rad:
             return None
 
-        x0 = self.offset.x
-        y0 = self.offset.y
-        tan0 = self.angle.tan()
-
-        x1 = other.offset.x
-        y1 = other.offset.y
-        tan1 = other.angle.tan()
-
-        x = (y1 - y0 + tan0 * x0 - tan1 * x1) / (tan0 - tan1)
-        y = tan0 * (x - x0) + y0
-        return Point(x, y)
+        return Vorwärtsschnitt_Richtung(
+            self.offset, other.offset, self.angle, other.angle
+        )

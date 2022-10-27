@@ -25,8 +25,8 @@ def Halbwinkelsatz(a: float, b: float, c: float) -> Tuple[Angle, Angle, Angle]:
     return (alpha, beta, gamma)
 
 
-# Aus zwei Punkten und den Längen ausgehend von diesen Punkten, ergibt zwei mögliche Punkte,
-# die diese Längen von diesen Punkten haben.
+# Aus zwei Punkten (A, B) und den Längen ausgehend von diesen Punkten,
+# ergibt den Schnittpunkt (C) zweier Kreise mit diesen Radien.
 # Achtung: ABC ist im Uhrzeigersinn. Tauscht man A und B, gäbe es noch eine andere Lösung.
 def Bogenschnitt(A: Point, B: Point, sAC: float, sBC: float) -> Point:
     sAB, vAB = HA2(A, B)
@@ -37,6 +37,23 @@ def Bogenschnitt(A: Point, B: Point, sAC: float, sBC: float) -> Point:
 
     # Alternativ:
     # vBC = vAB + (gon(200) - beta)
+    # C = HA1(B, vBC, sBC)
+
+    return C
+
+
+# Aus zwei Punkten und den orientierten Richtungen ausgehend von diesen Punkten, ergibt
+# den Schnittpunkt dieser Geraden.
+def Vorwärtsschnitt_Richtung(
+    A: Point, B: Point, vAC: Angle, vBC: Angle
+) -> Point:
+    sAB, vAB = HA2(A, B)
+
+    sAC = sAB * (vBC - vAB).sin() / (vBC - vAC).sin()
+    C = HA1(A, vAC, sAC)
+
+    # Alternative:
+    # sBC = sAB * (vAC - vAB).sin() / (vBC - vAC).sin()
     # C = HA1(B, vBC, sBC)
 
     return C
