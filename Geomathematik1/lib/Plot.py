@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional
 from matplotlib import pyplot as plt
+from lib.Circle import Circle
 from lib.Algorithms import HA1
 from lib.Point import Point
 from lib.Line import Line
@@ -38,9 +39,14 @@ class Plot:
         y = [P1.y, P2.y]
         self.ax.plot(y, x)
 
-    def add_circle(self, center: Point, radius: float):
-        circle = plt.Circle((center.y, center.x), radius, fill=False)
-        self.ax.add_artist(circle)
+    def add_circle(self, circle: Circle):
+        self.ax.add_artist(
+            plt.Circle(
+                (circle.center.y, circle.center.x),
+                circle.radius,
+                fill=False,
+            )
+        )
 
     def save(self, filename: str):
         self.fig.savefig(filename)

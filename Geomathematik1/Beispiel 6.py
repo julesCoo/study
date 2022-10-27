@@ -1,3 +1,4 @@
+from lib.Circle import Circle
 from lib.Point import Point
 from lib.Line import Line
 from lib.Angle import Angle, gon
@@ -11,7 +12,7 @@ C = Point(38.14, 151.63)
 sAB, vAB = HA2(A, B)
 sBC, vBC = HA2(B, C)
 
-vBA = vAB.reverse()
+vBA = vAB.flip()
 
 # Satz des Thales
 gamma = gon(100)
@@ -43,7 +44,7 @@ p.add_point(C, "C")
 p.add_point(M, "M")
 p.add_point(D, "D")
 p.add_line(Line.from_points(A, B))
-p.add_circle(M, M.distance_to(D))
+p.add_circle(Circle(M, M.distance_to(D)))
 p.save("Geomathematik1/Beispiel 6.png")
 
 

@@ -11,6 +11,9 @@ def gon(gon: float) -> Angle:
     return Angle(gon * math.tau / 400)
 
 
+# Encapsulates an Angle.
+# Internally stored in radians, but can be created from and converted to Gon.
+# The constructor automatically normalizes the angle to the range [0, 2pi).
 class Angle:
     rad: float
 
@@ -25,7 +28,8 @@ class Angle:
         gon = self.rad * 400 / math.tau
         return f"{gon:.4f}g"
 
-    def reverse(self) -> Angle:
+    # Returns the angle pointing in the opposite direction
+    def flip(self) -> Angle:
         return Angle(self.rad + math.pi)
 
     def __add__(self, other: Angle) -> Angle:

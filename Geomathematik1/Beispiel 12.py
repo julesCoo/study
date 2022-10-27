@@ -1,5 +1,6 @@
 from lib.Point import Point
 from lib.Line import Line
+from lib.Circle import Circle
 from lib.Angle import Angle, gon
 from lib.Plot import Plot
 from lib.Algorithms import HA1, HA2, Bogenschnitt
@@ -20,10 +21,10 @@ N2 = Bogenschnitt(A, B, sA2, sB2)
 p = Plot(Point(2700, 4400), Point(3000, 4700))
 p.add_point(A, "A")
 p.add_point(B, "B")
-p.add_circle(A, sA1)
-p.add_circle(A, sA2)
-p.add_circle(B, sB1)
-p.add_circle(B, sB2)
+p.add_circle(Circle(A, sA1))
+p.add_circle(Circle(A, sA2))
+p.add_circle(Circle(B, sB1))
+p.add_circle(Circle(B, sB2))
 p.add_point(N1, "N1")
 p.add_point(N2, "N2")
 p.save("Geomathematik1/Beispiel 12.png")
