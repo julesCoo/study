@@ -3,11 +3,19 @@ from dataclasses import dataclass
 import math
 
 
+def fmt_number(num: float) -> str:
+    """Format a number for printing."""
+    return f"{num:.5e}".replace("+", "")
+
+
 @dataclass
 class Vec3:
     x: float
     y: float
     z: float
+
+    def __str__(self) -> str:
+        return f"({fmt_number(self.x)}, {fmt_number(self.y)}, {fmt_number(self.z)})"
 
     def normalized(self):
         l = self.length()

@@ -13,7 +13,7 @@ class CartesianCoordinate:
         self.y = y
 
     def __str__(self) -> str:
-        return f"({self.x}, {self.y})"
+        return f"(y={self.y}, x={self.x})"
 
     def __add__(self, other: CartesianCoordinate) -> CartesianCoordinate:
         return CartesianCoordinate(self.x + other.x, self.y + other.y)
@@ -48,11 +48,11 @@ class PolarCoordinate:
         self.rad += angle.rad
         return self
 
-    def setAngle(self, angle: Angle) -> PolarCoordinate:
+    def set_angle(self, angle: Angle) -> PolarCoordinate:
         self.rad = angle.rad
         return self
 
-    def setDistance(self, distance: float) -> PolarCoordinate:
+    def set_distance(self, distance: float) -> PolarCoordinate:
         self.r = distance
         return self
 
@@ -63,31 +63,28 @@ class PolarCoordinate:
 
 
 class Segment:
-    startCoord: CartesianCoordinate
-    endCoord: CartesianCoordinate
+    start: CartesianCoordinate
+    end: CartesianCoordinate
 
     def __init__(
         self, startCoord: CartesianCoordinate, endCoord: CartesianCoordinate
     ) -> None:
-        self.startCoord = startCoord
-        self.endCoord = endCoord
+        self.start = startCoord
+        self.end = endCoord
 
     def __str__(self) -> str:
-        return f"{self.startCoord} - {self.endCoord}"
+        return f"{self.start} - {self.end}"
 
     # Rotates the Segment around it's start point
     def rotate(self, angle: Angle) -> Segment:
-        self.endCoord = (
-            self.startCoord
-            + (self.endCoord - self.startCoord).toPolar().rotate(angle).toCartesian()
+        self.end = (
+            self.start + (self.end - self.start).toPolar().rotate(angle).toCartesian()
         )
         return self
 
     def length(self) -> float:
-        return (self.endCoord - self.startCoord).length()
+        return (self.end - self.start).length()
 
-    def setLength(self, length: float) -> Segment:
-        self.endCoord = self.startCoord + (self.endCoord - self.startCoord) * (
-            length / self.length()
-        )
+    def set_length(self, length: float) -> Segment:
+        self.end = self.start + (self.end - self.start) * (length / self.length())
         return self

@@ -34,10 +34,10 @@ class Angle:
         return Angle(rad=self.rad * scalar)
 
     def toDeg(self) -> float:
-        return 360 * self.rad / 2 * math.pi
+        return 360 * self.rad / (2 * math.pi)
 
     def toGon(self) -> float:
-        return 360 * self.rad / 2 * math.pi
+        return 400 * self.rad / (2 * math.pi)
 
 
 def rad(rad: float) -> Angle:
