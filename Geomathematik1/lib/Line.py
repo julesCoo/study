@@ -17,6 +17,9 @@ class Line:
     def from_points(cls, p1: Point, p2: Point) -> Line:
         return cls(p1, p1.oriented_angle_to(p2))
 
+    def direction_vec(self) -> Point:
+        return Point(self.angle.cos(), self.angle.sin())
+
     def intersection(self, other: Line) -> Optional[Point]:
         if self.angle.rad == other.angle.rad:
             return None

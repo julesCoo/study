@@ -5,8 +5,11 @@ from lib.Angle import Angle, rad, gon
 
 
 # Aus einem Punkt, einer Richtung und einer Länge, ergibt den nächsten Punkt
-def HA1(P: Point, nu: Angle, s: float) -> Point:
-    return Point(P.x + s * nu.cos(), P.y + s * nu.sin())
+def HA1(P: Point, v: Angle, s: float) -> Point:
+    return Point(
+        P.x + s * v.cos(),
+        P.y + s * v.sin(),
+    )
 
 
 # Aus zwei Punkten, ergibt die Länge und die Richtung des Verbindungsvektors
@@ -44,9 +47,7 @@ def Bogenschnitt(A: Point, B: Point, sAC: float, sBC: float) -> Point:
 
 # Aus zwei Punkten und den orientierten Richtungen ausgehend von diesen Punkten, ergibt
 # den Schnittpunkt dieser Geraden.
-def Vorwärtsschnitt_Richtung(
-    A: Point, B: Point, vAC: Angle, vBC: Angle
-) -> Point:
+def Vorwärtsschnitt_Richtung(A: Point, B: Point, vAC: Angle, vBC: Angle) -> Point:
     sAB, vAB = HA2(A, B)
 
     sAC = sAB * (vBC - vAB).sin() / (vBC - vAC).sin()

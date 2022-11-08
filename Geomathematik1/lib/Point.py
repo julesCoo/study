@@ -20,3 +20,12 @@ class Point:
 
     def oriented_angle_to(self, other: Point) -> Angle:
         return Angle(rad=math.atan2(other.y - self.y, other.x - self.x))
+
+    def __add__(self, other: Point) -> Point:
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other: Point) -> Point:
+        return Point(self.x - other.x, self.y - other.y)
+
+    def __mul__(self, scale: float) -> Point:
+        return Point(self.x * scale, self.y * scale)

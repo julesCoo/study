@@ -1,3 +1,4 @@
+from lib.Circle import Circle
 from lib.Point import Point
 from lib.Line import Line
 from lib.Angle import Angle, gon
@@ -10,13 +11,20 @@ P3 = Point(8.21, 18.41)
 
 s2n = 32.48
 
-# TODO: finde Pn
-# N liegt auf P1-P3, zwischen 1 und 3
+circle = Circle(P2, s2n)
+line = Line.from_points(P1, P3)
 
-p = Plot(Point(-25, -25), Point(25, 25))
+# Pn liegt auf P1-P3, zwischen 1 und 3
+Pn1, Pn2 = circle.intersect_line(line)
+Pn = Pn2
+
+p = Plot(Point(-50, -50), Point(50, 50))
 p.add_point(P1, "P1")
 p.add_point(P2, "P2")
 p.add_point(P3, "P3")
-p.add_circle(P2, s2n)
-p.add_line(Line.from_points(P1, P3))
+p.add_circle(circle)
+p.add_line(line)
+p.add_point(Pn, "Pn")
 p.save("Geomathematik1/Beispiel 13.png")
+
+print("Pn =", Pn)
