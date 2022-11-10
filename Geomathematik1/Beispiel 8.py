@@ -1,6 +1,6 @@
 from lib2d.Point import Point
 from lib2d.Line import Line
-from lib2d.Angle import Angle, gon
+from lib.Angle import Angle, gon
 from lib2d.Plot import Plot
 from lib2d.Algorithms import HA1, HA2
 

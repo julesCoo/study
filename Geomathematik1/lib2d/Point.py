@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 
-from lib2d.Angle import Angle
+from lib.Angle import Angle
 
 
 class Point:

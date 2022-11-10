@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional
 from lib2d.Algorithms import Vorwärtsschnitt_Richtung
 from lib2d.Point import Point
-from lib2d.Angle import Angle
+from lib.Angle import Angle
 
 
 class Line:

@@ -1,4 +1,4 @@
-from lib2d.Angle import gon
+from lib.Angle import gon
 from lib2d.Point import Point
 
 L = Point(1116.01, 900.16)
