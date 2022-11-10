@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import Optional
 from matplotlib import pyplot as plt
-from lib.Circle import Circle
-from lib.Algorithms import HA1
-from lib.Point import Point
-from lib.Line import Line
+from lib2d.Circle import Circle
+from lib2d.Algorithms import HA1
+from lib2d.Point import Point
+from lib2d.Line import Line
 
 
 class Plot:

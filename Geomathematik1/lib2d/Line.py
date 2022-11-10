@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import Optional
-from lib.Algorithms import Vorwärtsschnitt_Richtung
-from lib.Point import Point
-from lib.Angle import Angle
+from lib2d.Algorithms import Vorwärtsschnitt_Richtung
+from lib2d.Point import Point
+from lib2d.Angle import Angle
 
 
 class Line:

@@ -1,7 +1,7 @@
 import math
 from typing import Optional, Tuple
-from lib.Point import Point
-from lib.Angle import Angle, rad, gon
+from lib2d.Point import Point
+from lib2d.Angle import Angle, rad, gon
 
 
 # Aus einem Punkt, einer Richtung und einer Länge, ergibt den nächsten Punkt
@@ -58,3 +58,40 @@ def Vorwärtsschnitt_Richtung(A: Point, B: Point, vAC: Angle, vBC: Angle) -> Poi
     # C = HA1(B, vBC, sBC)
 
     return C
+
+
+def Koordinatentransformation(
+    point: Point,
+    scale: Optional[float] = None,
+    rotation: Optional[Angle] = None,
+    translation: Optional[Point] = None,
+) -> Point:
+    if scale is not None:
+        point = Point(point.x * scale, point.y * scale)
+    if rotation is not None:
+        point = Point(
+            point.x * rotation.cos() - point.y * rotation.sin(),
+            point.x * rotation.sin() + point.y * rotation.cos(),
+        )
+    if translation is not None:
+        point = Point(point.x + translation.x, point.y + translation.y)
+
+    return point
+
+
+"""
+Drehung in 3D:
+    Ortsvektor: x
+    Drehachse: omega
+        Drehachse normalisieren!
+    Drehwinkel: alpha
+    Drehmatrix: R
+
+    Berechnung der Drehmatrix:
+        Projektionsmatrix: PI = omega * omega^T (dyadische Multiplikation)
+
+        Projizierung von x auf die Drehachse: 
+
+
+
+"""

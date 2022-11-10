@@ -26,7 +26,7 @@ class Angle:
 
     def __str__(self) -> str:
         gon = self.rad * 400 / math.tau
-        return f"{gon:.4f}g"
+        return f"{gon:.3f} gon"
 
     # Returns the angle pointing in the opposite direction
     def flip(self) -> Angle:

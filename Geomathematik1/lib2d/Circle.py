@@ -1,9 +1,8 @@
 from __future__ import annotations
 import math
-from lib.Algorithms import HA1
-
-from lib.Line import Line
-from lib.Point import Point
+from lib2d.Algorithms import HA1
+from lib2d.Line import Line
+from lib2d.Point import Point
 
 
 class Circle:

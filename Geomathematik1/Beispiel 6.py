@@ -1,9 +1,9 @@
-from lib.Circle import Circle
-from lib.Point import Point
-from lib.Line import Line
-from lib.Angle import Angle, gon
-from lib.Plot import Plot
-from lib.Algorithms import HA1, HA2
+from lib2d.Circle import Circle
+from lib2d.Point import Point
+from lib2d.Line import Line
+from lib2d.Angle import Angle, gon
+from lib2d.Plot import Plot
+from lib2d.Algorithms import HA1, HA2
 
 A = Point(-94.10, -85.66)
 B = Point(120.95, 115.25)

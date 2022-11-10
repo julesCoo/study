@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 
-from lib.Angle import Angle
+from lib2d.Angle import Angle
 
 
 class Point:
@@ -13,7 +13,7 @@ class Point:
         self.y = y
 
     def __str__(self) -> str:
-        return f"({self.x:.4f}, {self.y:.4f})"
+        return f"({self.x:.3f}, {self.y:.3f})"
 
     def distance_to(self, other: Point) -> float:
         return math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
