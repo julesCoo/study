@@ -9,13 +9,14 @@ P1 = Point(5207864.64, -70178.81)
 P2 = Point(5208032.30, -70021.36)
 
 # unorientierte Richtungen
-N1toP1 = gon(0)
-N1toP2 = gon(54.593)
-N1ToN2 = gon(106.778)
+N1P1 = gon(0)
+N1P2 = gon(54.593)
+N1N2 = gon(106.778)
 
-N2toN1 = gon(0)
-N2toP1 = gon(22.426)
-N2toP2 = gon(71.204)
+N2N1 = gon(0)
+N2P1 = gon(22.426)
+N2P2 = gon(71.204)
+
 
 # Finde N1, N2
 

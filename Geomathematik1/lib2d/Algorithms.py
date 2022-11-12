@@ -58,3 +58,61 @@ def Vorwärtsschnitt_Richtung(A: Point, B: Point, vAC: Angle, vBC: Angle) -> Poi
     # C = HA1(B, vBC, sBC)
 
     return C
+
+
+# Aus 3 Punkten (L, M, R), und zwei Winkeln von N zu den drei Punkten,
+# berechne den Punkt N.
+def Rückwärtsschnitt(
+    L: Point,
+    M: Point,
+    R: Point,
+    wNL: Angle,
+    wNM: Angle,
+    wNR: Angle,
+) -> Point:
+    alpha = wNM - wNL
+    beta = wNR - wNM
+
+    sML, vML = HA2(M, L)
+    sMR, vMR = HA2(M, R)
+
+    a = alpha.sin() / sML
+    b = -beta.sin() / sMR
+
+    va = vMR - beta
+    vb = vML + alpha
+    base = (vML - vMR + alpha + beta).sin()
+    gamma = (a * va.cos() - b * vb.cos()) / base
+    mu = (a * va.sin() - b * vb.sin()) / base
+
+    sMN_sq = 1 / (gamma**2 + mu**2)
+
+    return Point(
+        M.x + sMN_sq * gamma,
+        M.y + sMN_sq * mu,
+    )
+
+
+def CoordinateTransform(
+    # Point in the old coordinate system
+    point: Point,
+    # Scale factor of a distance in the old coordinate system to a distance in the new coordinate system
+    scale: Optional[float] = None,
+    # Rotation of the axes from the old coordinate system into the new coordinate system
+    rotation: Optional[Angle] = None,
+    # Translation of the origin from the old coordinate system into the new coordinate system
+    translation: Optional[Point] = None,
+):
+    if scale is not None:
+        point = point * scale
+
+    if rotation is not None:
+        point = Point(
+            point.x * rotation.cos() - point.y * rotation.sin(),
+            point.x * rotation.sin() + point.y * rotation.cos(),
+        )
+
+    if translation is not None:
+        point = point + translation
+
+    return point

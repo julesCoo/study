@@ -28,6 +28,9 @@ class Angle:
         gon = self.rad * 400 / math.tau
         return f"{gon:.3f} gon"
 
+    def __neg__(self) -> Angle:
+        return Angle(-self.rad)
+
     # Returns the angle pointing in the opposite direction
     def flip(self) -> Angle:
         return Angle(self.rad + math.pi)

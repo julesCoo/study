@@ -1,5 +1,5 @@
 # Numeric integration of a function f(x) from lower to upper
-def integrate(lower, upper, f, n=10000):
+def integrate(f, lower, upper, n=10000):
     step_size = (upper - lower) / n
     sum = 0
     for i in range(n):

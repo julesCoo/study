@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional
 from matplotlib import pyplot as plt
+from lib2d.Segment import Segment
 from lib2d.Circle import Circle
 from lib2d.Algorithms import HA1
 from lib2d.Point import Point
@@ -37,6 +38,11 @@ class Plot:
 
         x = [P1.x, P2.x]
         y = [P1.y, P2.y]
+        self.ax.plot(y, x)
+
+    def add_segment(self, segment: Segment):
+        x = [segment.p1.x, segment.p2.x]
+        y = [segment.p1.y, segment.p2.y]
         self.ax.plot(y, x)
 
     def add_circle(self, circle: Circle):
