@@ -55,6 +55,9 @@ class Vec2:
             self.y * scalar,
         )
 
+    def __div__(self, scalar: float) -> Vec2:
+        return self * (1 / scalar)
+
     def __neg__(self) -> Vec2:
         return self * -1
 
@@ -121,6 +124,9 @@ class Vec3:
             self.y * scalar,
             self.z * scalar,
         )
+
+    def __div__(self, scalar: float) -> Vec3:
+        return self * (1 / scalar)
 
     def __neg__(self) -> Vec3:
         return self * -1

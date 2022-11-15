@@ -34,8 +34,8 @@ sBM = sBD / 2
 vBD = vBA
 vBM = vBA
 
-D = HA1(B, vBD, sBD)
-M = HA1(B, vBM, sBM)
+D = HA1(B, sBD, vBD)
+M = HA1(B, sBM, vBM)
 
 p = Plot(Point(-200, -200), Point(200, 200))
 p.add_point(A, "A")

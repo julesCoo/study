@@ -33,8 +33,8 @@ class Plot:
     def add_line(self, line: Line):
         P0 = line.offset
 
-        P1 = HA1(P0, line.angle, 1000)
-        P2 = HA1(P0, line.angle, -1000)
+        P1 = HA1(P0, 1000, line.angle)
+        P2 = HA1(P0, -1000, line.angle)
 
         x = [P1.x, P2.x]
         y = [P1.y, P2.y]
