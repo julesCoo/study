@@ -3,24 +3,24 @@ from lib2d.Point import Point
 from lib2d.Line import Line
 from lib.Angle import Angle, gon
 from lib2d.Plot import Plot
-from lib2d.Algorithms import HA1, HA2, Vorwaertsschnitt_Winkel
+from lib2d.Algorithms import HA1, HA2, Vorwärtsschnitt_Winkel
 
 P1 = Point(5207864.64, -70178.81)
 P2 = Point(5208032.30, -70021.36)
 
 # unorientierte Richtungen
-wN1_P1 = gon(0)
-wN1_P2 = gon(54.593)
-wN1_N2 = gon(106.778)
+rN1P1 = gon(0)
+rN1P2 = gon(54.593)
+rN1N2 = gon(106.778)
 
-wN2_N1 = gon(0)
-wN2_P1 = gon(22.426)
-wN2_P2 = gon(71.204)
+rN2N1 = gon(0)
+rN2P1 = gon(22.426)
+rN2P2 = gon(71.204)
 
-w1 = wN1_P2 - wN1_P1
-w2 = wN1_N2 - wN1_P2
-w3 = wN2_P1 - wN2_N1
-w4 = wN2_P2 - wN2_P1
+w1 = rN1P2 - rN1P1
+w2 = rN1N2 - rN1P2
+w3 = rN2P1 - rN2N1
+w4 = rN2P2 - rN2P1
 w5 = gon(200) - w2 - w3
 w6 = gon(200) - w5
 w7 = gon(200) - w4 - w6
@@ -49,7 +49,7 @@ for g in range(0, 200, 5):
     if beta.rad < 0:
         continue
 
-    N = Vorwaertsschnitt_Winkel(P1, P2, alpha, beta)
+    N = Vorwärtsschnitt_Winkel(P1, P2, alpha, beta)
     p.add_point(N)
 
 for g in range(0, 200, 5):
@@ -59,7 +59,7 @@ for g in range(0, 200, 5):
     if beta.rad < 0:
         continue
 
-    N = Vorwaertsschnitt_Winkel(P1, P2, alpha, beta)
+    N = Vorwärtsschnitt_Winkel(P1, P2, alpha, beta)
     p.add_point(N)
 
 p.save("Geomathematik1/Beispiel 18.png")

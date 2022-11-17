@@ -83,7 +83,7 @@ def Vorwärtsschnitt_Richtung(
 
 # Aus zwei Punkten und den unorientierten Richtungen ausgehend von diesen Punkten, ergibt
 # den Schnittpunkt dieser Geraden.
-def Vorwaertsschnitt_Winkel(
+def Vorwärtsschnitt_Winkel(
     A: Point,
     B: Point,
     alpha: Angle,
@@ -109,12 +109,12 @@ def Rückwärtsschnitt(
     L: Point,
     M: Point,
     R: Point,
-    wNL: Angle,
-    wNM: Angle,
-    wNR: Angle,
+    rNL: Angle,
+    rNM: Angle,
+    rNR: Angle,
 ) -> Point:
-    alpha = wNM - wNL
-    beta = wNR - wNM
+    alpha = rNM - rNL
+    beta = rNR - rNM
 
     sML, vML = HA2(M, L)
     sMR, vMR = HA2(M, R)
@@ -134,6 +134,29 @@ def Rückwärtsschnitt(
         M.x + sMN_sq * gamma,
         M.y + sMN_sq * mu,
     )
+
+
+def Rückwärtsschnitt_Collins(
+    L: Point,
+    M: Point,
+    R: Point,
+    rNL: Angle,
+    rNM: Angle,
+    rNR: Angle,
+) -> Point:
+    alpha = rNM - rNL
+    beta = rNR - rNM
+
+    H = Vorwärtsschnitt_Winkel(R, L, alpha, beta)
+    sHL, vHL = HA2(H, L)
+    sHM, vHM = HA2(H, M)
+    sHR, vHR = HA2(H, R)
+
+    gamma = vHM - vHR
+    delta = vHL - vHM
+
+    N = Vorwärtsschnitt_Winkel(L, R, gamma, delta)
+    return N
 
 
 def CoordinateTransform(

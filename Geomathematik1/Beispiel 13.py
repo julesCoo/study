@@ -28,3 +28,5 @@ p.add_point(Pn, "Pn")
 p.save("Geomathematik1/Beispiel 13.png")
 
 print("Pn =", Pn)
+print(P1.distance_to(Pn1))
+print(P1.distance_to(Pn2))

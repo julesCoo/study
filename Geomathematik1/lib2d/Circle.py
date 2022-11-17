@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+from lib2d.Segment import Segment
 from lib2d.Algorithms import HA1
 from lib2d.Line import Line
 from lib2d.Point import Point
@@ -12,6 +13,18 @@ class Circle:
     def __init__(self, center: Point, radius: float):
         self.center = center
         self.radius = radius
+
+    @classmethod
+    def from_points(cls, A: Point, B: Point, C: Point) -> Circle:
+        sAB = Segment.from_points(A, B)
+        sBC = Segment.from_points(B, C)
+
+        l1 = sAB.perpendicular_bisector()
+        l2 = sBC.perpendicular_bisector()
+
+        center = l1.intersection(l2)
+        radius = center.distance_to(A)
+        return cls(center, radius)
 
     def intersect_line(self, line: Line) -> tuple[Point, Point]:
         # Translate coordinates so that the circle is centered at the origin
