@@ -34,7 +34,7 @@ def lorentz(electricField: Vec3, magneticField: Vec3, electronSpeed: Vec3):
 
 
 # Returns the gravitational force being applied the object at pos1
-def gravity(mass1: float, mass2: float, pos1: Vec3, pos2: Vec3):
+def gravity(mass1: float, mass2: float, pos1: Vec3, pos2: Vec3) -> Vec3:
     r21 = -pos2 + pos1
     force = gravitationalConstant * mass1 * mass2 / r21.length() ** 2
     return r21.normalized() * force
