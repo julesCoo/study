@@ -15,7 +15,7 @@ def coulomb(
     pos2: Vec3,
     charge1: float = electronCharge,
     charge2: float = electronCharge,
-):
+) -> Vec3:
     r21 = -pos2 + pos1
     distance = r21.normalize()
 
