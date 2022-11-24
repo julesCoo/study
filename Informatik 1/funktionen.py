@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-import re
-
 """
 Aufgabe 1
 
@@ -9,75 +6,48 @@ Achten Sie dabei besonders darauf, dass sowohl Alt- als auch Neugradfunktioniere
 """
 
 
-# Encapsulates the different parts of an angle (degrees, minutes, seconds) in a single object.
-# When converted into a string, it will be formatted as dd°mm'ss.sss".
-@dataclass
-class FormattedAngle:
-    degrees: int
-    minutes: int
-    seconds: float
-
-    def __str__(self) -> str:
-        return f"{self.degrees}°{self.minutes}'{self.seconds:.3f}\""
-
-
-# Generalized function for formatting angular units (degrees, radians, or whatever else people come up with in the future).
-# This function is not meant to be called directly, but is used internally by the `format_grd` and `format_deg` functions.
-def _format_angular_units(
-    unit_value: float,
-    units_per_rotation: float = 360,
-    units_per_minute: float = 60,
-    units_per_second: float = 60,
-) -> FormattedAngle:
-    # Ensure that the angle is in the range [0, units_per_rotation)
-    # note that the modulo operator also converts a negative value into a positive one!
-    unit_value = unit_value % units_per_rotation
-
-    # Split it into an integer and a fractional part
-    deg_int = int(unit_value)
-    deg_frac = unit_value - deg_int
-
-    # Calculate minutes from the fractional part.
-    # Minutes must also be an integer, the remaining fractions are converted into seconds.
-    min = deg_frac * units_per_minute
-    min_int = int(min)
-    min_frac = min - min_int
-
-    # Seconds will be given in decimals, as they can no longer be broken down into smaller units.
-    sec = min_frac * units_per_second
-
-    return FormattedAngle(deg_int, min_int, sec)
-
-
-# Converts a decimal value of degrees into a FormattedAngle.
-def format_deg(degrees: float) -> FormattedAngle:
-    return _format_angular_units(degrees, 360, 60, 60)
-
-
-# Converts a decimal value of gradians into a FormattedAngle.
-def format_grd(gradians: float) -> FormattedAngle:
-    return _format_angular_units(gradians, 400, 100, 100)
-
-
-# Converts the input of an angular unit into a FormattedAngle.
+# Converts the input of an angular unit into a tuple of (degrees, minutes, seconds).
 # The input should be a number followed by `deg` to indicate degrees, or `grd` to indicate gradians.
-def format_angular_input(input_str: str) -> FormattedAngle:
-    # Extract the number and the unit from the input string using regular expressions.
-    match = re.match(r"([\+\-]?\d+\.?\d*) *(\D+)", input_str)
+def convert_angular_input(input_str: str) -> tuple[int, int, float]:
 
-    if match is None:
-        raise ValueError(
-            "Invalid input format. Please enter a number followed by 'deg' or 'grd'."
-        )
+    # Generalized function for formatting angular units (degrees, radians, or whatever else people come up with in the future).
+    def _format_angular_units(
+        unit_value: float,
+        units_per_rotation: float = 360,
+        units_per_minute: float = 60,
+        units_per_second: float = 60,
+    ) -> tuple[int, int, float]:
+        # Ensure that the angle is in the range [0, units_per_rotation)
+        # note that the modulo operator also converts a negative value into a positive one!
+        unit_value = unit_value % units_per_rotation
 
-    value = float(match.group(1))
-    unit = match.group(2)
-    if unit == "deg":
-        return format_deg(value)
-    elif unit == "grd":
-        return format_grd(value)
-    else:
-        raise ValueError("Invalid unit. Please enter 'deg' or 'grd'.")
+        # Split it into an integer and a fractional part
+        deg_int = int(unit_value)
+        deg_frac = unit_value - deg_int
+
+        # Calculate minutes from the fractional part.
+        # Minutes must also be an integer, the remaining fractions are converted into seconds.
+        min = deg_frac * units_per_minute
+        min_int = int(min)
+        min_frac = min - min_int
+
+        # Seconds will be given in decimals, as they can no longer be broken down into smaller units.
+        sec = min_frac * units_per_second
+
+        return (deg_int, min_int, sec)
+
+    if input_str.endswith("deg"):
+        input_str = input_str.replace("deg", "")
+        degrees = float(input_str)
+        return _format_angular_units(degrees, 360, 60, 60)
+
+    if input_str.endswith("grd"):
+        input_str = input_str.replace("grd", "")
+        gradians = float(input_str)
+        return _format_angular_units(gradians, 400, 100, 100)
+
+    print("Ungültige Eingabe. Geben Sie eine Zahl, gefolgt von 'deg' oder 'grd' ein.")
+    return None
 
 
 """
@@ -98,7 +68,7 @@ def fibonacci(n: int = 10) -> list[int]:
 
     # Calculate the remaining elements
     for i in range(2, n):
-        fib_numbers.append(fib_numbers[i - 1] + fib_numbers[i - 2])
+        fib_numbers.append(fib_numbers[-1] + fib_numbers[-2])
 
     return fib_numbers
 
@@ -108,7 +78,37 @@ Anschließend soll jede Funktion (mit beliebigen Übergabewerten) zumindest ein
 Mal aufgerufen sowie die Rückgabewerte über die Konsole ausgegeben werden.
 """
 
-# We can't ask the user for input here, as this file is meant to be imported as a module,
-# and should not produce any side-effects during import.
-#
-# The input/output is instead delegated to modul_import.py
+# Ensure that this file is run as a program before performing input/output, otherwise this
+# would run as a side-effect of importing this file.
+if __name__ == "__main__":
+    print(">>>")
+    print("Aufgabe 1:")
+
+    # Repeat until the user enters a valid input
+    while True:
+        print("Geben Sie einen Winkel in Dezimalgrad ein:")
+        angle_str = input()
+        result = convert_angular_input(angle_str)
+        if result is None:
+            # Invalid input, try again
+            continue
+        else:
+            (degrees, minutes, seconds) = result
+            print(f"Grad: {degrees}°")
+            print(f"Min: {minutes}'")
+            print(f"Sek: {seconds:.3f}''")
+            break
+
+    print("")
+    print("Aufgabe 2:")
+
+    # Repeat until the user enters a valid input
+    while True:
+        print("Geben Sie die Anzahl der Elemente (mind. 2) der Fibonacci Reihe an:")
+        n = int(input())
+        if not n >= 2:
+            # Invalid input, try again
+            continue
+        else:
+            print("Output:", fibonacci(n))
+            break

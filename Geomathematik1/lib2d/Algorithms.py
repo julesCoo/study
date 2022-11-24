@@ -1,4 +1,6 @@
 import math
+import numpy as np
+from dataclasses import dataclass
 from typing import Optional, Tuple
 from lib2d.Point import Point
 from lib.Angle import Angle, rad, gon
@@ -82,7 +84,8 @@ def Vorwärtsschnitt_Richtung(
 
 
 # Aus zwei Punkten und den unorientierten Richtungen ausgehend von diesen Punkten, ergibt
-# den Schnittpunkt dieser Geraden.
+# den Schnittpunkt C dieser Geraden.
+# A, B, C sind im Uhrzeigersinn.
 def Vorwärtsschnitt_Winkel(
     A: Point,
     B: Point,
@@ -159,26 +162,64 @@ def Rückwärtsschnitt_Collins(
     return N
 
 
-def CoordinateTransform(
-    # Point in the old coordinate system
-    point: Point,
-    # Scale factor of a distance in the old coordinate system to a distance in the new coordinate system
-    scale: Optional[float] = None,
-    # Rotation of the axes from the old coordinate system into the new coordinate system
-    rotation: Optional[Angle] = None,
-    # Translation of the origin from the old coordinate system into the new coordinate system
-    translation: Optional[Point] = None,
-):
-    if scale is not None:
-        point = point * scale
+@dataclass
+class CoordinateTransformation:
+    scale: float
+    rotation: Angle
+    translation: Point
 
-    if rotation is not None:
+    def __str__(self) -> str:
+        return f"scale={self.scale}, rotation={self.rotation}, translation={self.translation}"
+
+    def transform(self, point: Point) -> Point:
+        point = point - self.translation
+        point = point * self.scale
+
         point = Point(
-            point.x * rotation.cos() - point.y * rotation.sin(),
-            point.x * rotation.sin() + point.y * rotation.cos(),
+            point.x * self.rotation.cos() - point.y * self.rotation.sin(),
+            point.x * self.rotation.sin() + point.y * self.rotation.cos(),
         )
 
-    if translation is not None:
-        point = point + translation
+        return point
 
-    return point
+
+# Given a pair of points in the coordinate system 1, and a pair of points in the coordinate system 2,
+# returns the transformation from cs1 -> cs2.
+def HelmertTransform(
+    points_cs1: Tuple[Point, Point],
+    points_cs2: Tuple[Point, Point],
+) -> CoordinateTransformation:
+    x1 = points_cs1[0].x
+    y1 = points_cs1[0].y
+    x2 = points_cs1[1].x
+    y2 = points_cs1[1].y
+    x1_ = points_cs2[0].x
+    y1_ = points_cs2[0].y
+    x2_ = points_cs2[1].x
+    y2_ = points_cs2[1].y
+
+    [a, b, c, d] = np.linalg.solve(
+        [
+            [x1_, -y1_, 1, 0],
+            [y1_, x1_, 0, 1],
+            [x2_, -y2_, 1, 0],
+            [y2_, x2_, 0, 1],
+        ],
+        [x1, y1, x2, y2],
+    )
+
+    print("a =", a)
+    print("b =", b)
+    print("c =", c)
+    print("d =", d)
+
+    mu = 1 / (a**2 + b**2) ** 0.5
+    phi = math.acos(a * mu)
+    dx = c
+    dy = d
+
+    return CoordinateTransformation(
+        scale=mu,
+        rotation=rad(phi),
+        translation=Point(dx, dy),
+    )
