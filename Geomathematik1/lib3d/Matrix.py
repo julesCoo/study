@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Union
-from math import sin, cos, acos
+from math import sin, cos, acos, tau
 from lib3d.Vector import Vec3
+import itertools
 
 
 class Mat3:
@@ -30,6 +31,19 @@ class Mat3:
             f"|{self.xx:7.4f}, {self.xy:7.4f}, {self.xz:7.4f}|\n"
             + f"|{self.yx:7.4f}, {self.yy:7.4f}, {self.yz:7.4f}|\n"
             + f"|{self.zx:7.4f}, {self.zy:7.4f}, {self.zz:7.4f}|"
+        )
+
+    def __eq__(self, other: Mat3) -> bool:
+        return (
+            abs(self.xx - other.xx) < 1e-3
+            and abs(self.xy - other.xy) < 1e-3
+            and abs(self.xz - other.xz) < 1e-3
+            and abs(self.yx - other.yx) < 1e-3
+            and abs(self.yy - other.yy) < 1e-3
+            and abs(self.yz - other.yz) < 1e-3
+            and abs(self.zx - other.zx) < 1e-3
+            and abs(self.zy - other.zy) < 1e-3
+            and abs(self.zz - other.zz) < 1e-3
         )
 
     def __add__(self, other: Mat3) -> Mat3:
@@ -140,12 +154,36 @@ class Mat3:
 
         return axis, angle
 
+    def euler_angles(self) -> tuple[float, float, float]:
+        for (flipTheta, flipPsi, flipPhi) in itertools.product(
+            [True, False],
+            [True, False],
+            [True, False],
+        ):
+            theta = acos(self.zz)
+            if flipTheta:
+                theta = tau - theta
+
+            psi = acos(self.zy / sin(theta))
+            if flipPsi:
+                psi = tau - psi
+
+            phi = acos(-self.yz / sin(theta))
+            if flipPhi:
+                phi = tau - phi
+
+            M = Mat3.from_euler_angles(theta, psi, phi)
+            if M == self:
+                return theta, psi, phi
+
+        raise ValueError("No valid euler angles found")
+
     @classmethod
     def identity(cls) -> Mat3:
         return cls((1, 0, 0), (0, 1, 0), (0, 0, 1))
 
     @classmethod
-    def from_euler_angles(cls, phi: float, psi: float, theta: float):
+    def from_euler_angles(cls, theta: float, psi: float, phi: float):
         return cls(
             (
                 cos(phi) * cos(psi) - sin(phi) * sin(psi) * cos(theta),
