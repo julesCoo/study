@@ -84,16 +84,8 @@ class Mat3:
             ),
         )
 
-    def transpose(self) -> Mat3:
-        return Mat3(
-            (self.xx, self.yx, self.zx),
-            (self.xy, self.yy, self.zy),
-            (self.xz, self.yz, self.zz),
-        )
-
-    def invert(self) -> Mat3:
-        # Calculate the determinant
-        det = (
+    def determinate(self) -> float:
+        return (
             self.xx * self.yy * self.zz
             + self.xy * self.yz * self.zx
             + self.xz * self.yx * self.zy
@@ -102,7 +94,15 @@ class Mat3:
             - self.xz * self.yy * self.zx
         )
 
-        # Calculate the inverse
+    def transpose(self) -> Mat3:
+        return Mat3(
+            (self.xx, self.yx, self.zx),
+            (self.xy, self.yy, self.zy),
+            (self.xz, self.yz, self.zz),
+        )
+
+    def invert(self) -> Mat3:
+        det = self.determinate()
         return Mat3(
             (
                 (self.yy * self.zz - self.yz * self.zy) / det,
@@ -167,7 +167,8 @@ class Mat3:
     @classmethod
     def from_axis_and_angle(cls, axis: Vec3, angle: float) -> Mat3:
         (x, y, z) = axis
-        proj = Mat3(
+
+        P = Mat3(
             (x * x, x * y, x * z),
             (y * x, y * y, y * z),
             (z * x, z * y, z * z),
@@ -181,4 +182,4 @@ class Mat3:
 
         I = Mat3.identity()
 
-        return proj + (I - proj) * cos(angle) + A * sin(angle)
+        return P + (I - P) * cos(angle) + A * sin(angle)
