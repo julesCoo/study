@@ -159,9 +159,9 @@ class Mat3:
 
     def euler_angles(self) -> tuple[float, float, float]:
         for (flipTheta, flipPsi, flipPhi) in itertools.product(
-            [True, False],
-            [True, False],
-            [True, False],
+            [False, True],
+            [False, True],
+            [False, True],
         ):
             theta = acos(self.zz)
             if flipTheta:
