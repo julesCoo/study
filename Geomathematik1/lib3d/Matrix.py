@@ -108,6 +108,9 @@ class Mat3:
             - self.xz * self.yy * self.zx
         )
 
+    def is_rotation(self) -> bool:
+        return abs(self.determinate() - 1) < 1e-3 and self.transpose() == self.inverse()
+
     def transpose(self) -> Mat3:
         return Mat3(
             (self.xx, self.yx, self.zx),
@@ -115,7 +118,7 @@ class Mat3:
             (self.xz, self.yz, self.zz),
         )
 
-    def invert(self) -> Mat3:
+    def inverse(self) -> Mat3:
         det = self.determinate()
         return Mat3(
             (

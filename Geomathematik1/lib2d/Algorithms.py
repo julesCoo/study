@@ -139,6 +139,7 @@ def Rückwärtsschnitt(
     )
 
 
+# Peripheriewinkelsatz!!
 def Rückwärtsschnitt_Collins(
     L: Point,
     M: Point,
@@ -207,11 +208,6 @@ def HelmertTransform(
         ],
         [x1, y1, x2, y2],
     )
-
-    print("a =", a)
-    print("b =", b)
-    print("c =", c)
-    print("d =", d)
 
     mu = 1 / (a**2 + b**2) ** 0.5
     phi = math.acos(a * mu)

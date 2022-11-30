@@ -1,10 +1,7 @@
-from lib2d.Segment import Segment
 from lib2d.Circle import Circle
 from lib2d.Point import Point
 from lib2d.Line import Line
-from lib.Angle import Angle, gon
 from lib2d.Plot import Plot
-from lib2d.Algorithms import HA1, HA2, Rückwärtsschnitt, Rückwärtsschnitt_Collins
 
 A = Point(-96.01, -86.86)
 B = Point(127.05, 113.75)
@@ -26,4 +23,9 @@ p.add_point(D, "D")
 p.add_point(E, "E")
 p.save("Geomathematik1/Beispiel 22.png")
 
-print("E=", E)
+print(f"Circle center: {circleBCD.center}")
+print(f"E = {E}")
+
+
+# Kann auch mit Collins gelöst werden
+# Andere Übungen: 20-25
