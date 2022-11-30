@@ -125,7 +125,7 @@ class Vec3:
             self.z * scalar,
         )
 
-    def __div__(self, scalar: float) -> Vec3:
+    def __truediv__(self, scalar: float) -> Vec3:
         return self * (1 / scalar)
 
     def __neg__(self) -> Vec3:
