@@ -26,7 +26,11 @@ class Mat3:
         self.zx, self.zy, self.zz = z
 
     def __str__(self) -> str:
-        return f"|{self.xx:7.4f}, {self.xy:7.4f}, {self.xz:7.4f}|\n|{self.yx:7.4f}, {self.yy:7.4f}, {self.yz:7.4f}|\n|{self.zx:7.4f}, {self.zy:7.4f}, {self.zz:7.4f}|"
+        return (
+            f"|{self.xx:7.4f}, {self.xy:7.4f}, {self.xz:7.4f}|\n"
+            + f"|{self.yx:7.4f}, {self.yy:7.4f}, {self.yz:7.4f}|\n"
+            + f"|{self.zx:7.4f}, {self.zy:7.4f}, {self.zz:7.4f}|"
+        )
 
     def __add__(self, other: Mat3) -> Mat3:
         return Mat3(
