@@ -138,13 +138,13 @@ class Mat3:
             ),
         )
 
-    def axis_and_rotation(self) -> tuple[Vec3, float]:
+    def axis_and_angle(self) -> tuple[Vec3, float]:
         # Rotate an arbitrary vector x into vector y
         x = Vec3(0, 0, 1)
         y = self * x
 
         # Take the (normalized) vector between x and y, which lies in the rotation plane
-        h = (y - x).normalized()
+        h = y - x
 
         # Rotate this vector, which now gets us two clamping vectors in the rotation plane
         h2 = self * h
@@ -153,7 +153,7 @@ class Mat3:
         axis = h.cross(h2).normalized()
 
         # The dot product of the (normalized) clamping vectors is cos(angle)
-        angle = acos(h2.dot(h))
+        angle = h.angle_between(h2)
 
         return axis, angle
 
@@ -183,44 +183,72 @@ class Mat3:
 
     @classmethod
     def identity(cls) -> Mat3:
-        return cls((1, 0, 0), (0, 1, 0), (0, 0, 1))
+        return Mat3((1, 0, 0), (0, 1, 0), (0, 0, 1))
 
     @classmethod
-    def from_euler_angles(cls, theta: float, psi: float, phi: float):
-        return cls(
-            (
-                cos(phi) * cos(psi) - sin(phi) * sin(psi) * cos(theta),
-                -cos(phi) * sin(psi) - sin(phi) * cos(psi) * cos(theta),
-                sin(phi) * sin(theta),
-            ),
-            (
-                sin(phi) * cos(psi) + cos(phi) * sin(psi) * cos(theta),
-                -sin(phi) * sin(psi) + cos(phi) * cos(psi) * cos(theta),
-                -cos(phi) * sin(theta),
-            ),
-            (
-                sin(psi) * sin(theta),
-                cos(psi) * sin(theta),
-                cos(theta),
-            ),
-        )
+    def from_euler_angles(
+        cls,
+        theta: float,
+        psi: float,
+        phi: float,
+        infinitesimal: bool = False,
+    ) -> Mat3:
+        if infinitesimal:
+            return Mat3.identity() + Mat3(
+                (0, -phi - psi, 0),
+                (phi + psi, 0, -theta),
+                (0, theta, 0),
+            )
+        else:
+            return Mat3(
+                (
+                    cos(phi) * cos(psi) - sin(phi) * sin(psi) * cos(theta),
+                    -cos(phi) * sin(psi) - sin(phi) * cos(psi) * cos(theta),
+                    sin(phi) * sin(theta),
+                ),
+                (
+                    sin(phi) * cos(psi) + cos(phi) * sin(psi) * cos(theta),
+                    -sin(phi) * sin(psi) + cos(phi) * cos(psi) * cos(theta),
+                    -cos(phi) * sin(theta),
+                ),
+                (
+                    sin(psi) * sin(theta),
+                    cos(psi) * sin(theta),
+                    cos(theta),
+                ),
+            )
 
     @classmethod
-    def from_axis_and_angle(cls, axis: Vec3, angle: float) -> Mat3:
-        (x, y, z) = axis
-
-        P = Mat3(
-            (x * x, x * y, x * z),
-            (y * x, y * y, y * z),
-            (z * x, z * y, z * z),
-        )
-
-        A = Mat3(
-            (0, -z, y),
-            (z, 0, -x),
-            (-y, x, 0),
-        )
-
+    def from_axis_and_angle(
+        cls,
+        axis: Vec3,
+        angle: float,
+        infinitesimal: bool = False,
+    ) -> Mat3:
         I = Mat3.identity()
 
-        return P + (I - P) * cos(angle) + A * sin(angle)
+        if infinitesimal:
+            x, y, z = axis.normalized() * angle
+            A = Mat3(
+                (0, -z, y),
+                (z, 0, -x),
+                (-y, x, 0),
+            )
+            return I + A
+
+        else:
+            x, y, z = axis.normalized()
+
+            P = Mat3(
+                (x * x, x * y, x * z),
+                (y * x, y * y, y * z),
+                (z * x, z * y, z * z),
+            )
+
+            A = Mat3(
+                (0, -z, y),
+                (z, 0, -x),
+                (-y, x, 0),
+            )
+
+            return P + (I - P) * cos(angle) + A * sin(angle)

@@ -7,7 +7,7 @@ M = Mat3(
     (-0.4277, 0.4429, 0.7880),
 )
 theta, psi, phi = M.euler_angles()
-axis, angle = M.axis_and_rotation()
+axis, angle = M.axis_and_angle()
 
 M2 = Mat3.from_euler_angles(theta, psi, phi)
 print(M2 - M)
