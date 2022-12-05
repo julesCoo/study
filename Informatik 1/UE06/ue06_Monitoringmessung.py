@@ -1,5 +1,3 @@
-import numpy as np
-
 """
 
 Dieses Skript wertet Messungen aus, mit dem Ziel einen möglichen Hangrutsch zu überwachen.
@@ -8,6 +6,9 @@ Dazu werden mit einem Theodoliten 4 Messpunkte ermittelt und mit historischen Da
 Sofern der Abstand zur früheren Messung zu groß ist, kann von einem Hangrutsch ausgegangen werden.
 
 """
+
+import numpy as np
+
 
 """
 
@@ -39,7 +40,7 @@ def forward_problem(args):
 
 """
 
-Anschließend werden die Messwerte aus .txt Dateien (im CSV-Format) eingelesen und ggf. transformiert.
+Anschließend werden die Messwerte aus .txt Dateien (im TSV-Format) eingelesen und ggf. transformiert.
 
 """
 
