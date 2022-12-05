@@ -1,67 +1,103 @@
 import numpy as np
 
-# Dieses Skript wertet Messungen aus, mit dem Ziel einen möglichen Hangrutsch zu überwachen.
-#
-# Dazu werden mit einem Theodoliten 4 Messpunkte ermittelt und mit historischen Daten verglichen.
-# Sofern der Abstand zur früheren Messung zu groß ist, kann von einem Hangrutsch ausgegangen werden.
+"""
 
-# Zuerst wird die y/x-Position des Theodoliten ("PKT. 3040") eingelesen:
-measuring_position = np.loadtxt("Standpunkt.txt", skiprows=1)
+Dieses Skript wertet Messungen aus, mit dem Ziel einen möglichen Hangrutsch zu überwachen.
 
-# Mit dem Theodoliten werden die Endpunkte einer Basislatte gemessen, die jeweils in den Messpunkten 1-4
-# positioniert wurde. Die Endpunkte der Basislatte wurden anvisiert und der Winkel zwischen diesen gemessen.
-# Aufgrund der bekannten Breite der Basislatte lässt sich daraus der Abstand vom Theodoliten zum Messpunkt bestimmen.
-# Zur verbesserten Genauigkeit wurde diese Messung jeweils 3x wiederholt. Aus der Datei wird also eine 4x3 Matrix gelesen.
+Dazu werden mit einem Theodoliten 4 Messpunkte ermittelt und mit historischen Daten verglichen.
+Sofern der Abstand zur früheren Messung zu groß ist, kann von einem Hangrutsch ausgegangen werden.
+
+"""
+
+"""
+
+Wir beginnen mit der Definition einiger Funktionen:
+
+"""
 
 # Winkel wurden in Altgrad gemessen, für die Berechnung müssen sie in Bogenmaß umgewandelt werden.
-def gradians_to_radians(gon: float) -> float:
+def gradians_to_radians(gon):
     return gon * np.pi / 200
 
 
-subtense_angles = np.loadtxt("Basislattenmessungen.txt", skiprows=1)
-subtense_angles = gradians_to_radians(subtense_angles)
-
 # Um aus einer Winkelmessung mit der Basislatte die Entfernung zum Messpunkt zu bestimmen, wird diese Formel verwendet.
 # Dabei ist b die Breite der Basislatte, und gamma der gemessene Winkel.
-def distance_from_angle(gamma: float) -> float:
+def subtense_distance_from_angle(gamma):
     b = 2  # Es wurde in diesem Fall eine Basislatte mit einer Breite von 2m verwendet.
     s = (b / 2) / np.tan(gamma / 2)
     return s
 
 
-# Die Entfernung wird nun für jeden Messwert der Matrix berechnet.
-# Anschließend werden aus den Zeilen der Matrix ein Mittelwert berechnet, sodass das Ergebnis ein Array mit 4 Werten ist.
-subtense_distances = distance_from_angle(subtense_angles)
-subtense_distances = np.mean(subtense_distances, axis=1)
-
-# Anschließend wurden orientierte Richtungen (in gon) zu den Messpunkten gemessen.
-# Hier wurde bereits der Mittelwert aus mehreren Messungen gebildet und ist in der Datei abgespeichert.
-oriented_angles = np.loadtxt("Gemittelte Orientierte Richtungen.txt", skiprows=1)
-oriented_angles = gradians_to_radians(oriented_angles)
-
-# Um die Koordinaten der Messpunkte zu berechnen, wird nun eine Matrix gebildet mit den Spalten:
-# | y1, x1, distance, oriented_angle |
-# Dabei sind x1 und y1 die Koordinaten des Theodoliten.
-# Die Position des Messpunkts lässt sich dann mit der ersten Hauptaufgabe berechnen.
+# Die Position eines Messpunkts lässt sich der ersten geodätischen Hauptaufgabe berechnen.
 def forward_problem(args):
-    # Argument dieser Funktion ist ein Numpy Array, das hier manuell entpackt werden muss..
+    # Argument dieser Funktion ist ein Numpy Array, das hier manuell entpackt werden muss.
     y1, x1, s, phi = args
     y2 = y1 + s * np.sin(phi)
     x2 = x1 + s * np.cos(phi)
     return y2, x2
 
 
+"""
+
+Anschließend werden die Messwerte aus .txt Dateien (im CSV-Format) eingelesen und ggf. transformiert.
+
+"""
+
+# Die y/x-Position des Theodoliten ("PKT. 3040"), von dem die Messung ausgeht.
+# Eine einzelne Position mit 2 Werten, also eine 1x2 Matrix.
+theodolite_position = np.loadtxt("Standpunkt.txt", skiprows=1)
+
+# Mit dem Theodoliten werden die Endpunkte einer Basislatte gemessen, die jeweils in den Messpunkten 1-4
+# positioniert wurde. Die Endpunkte der Basislatte wurden anvisiert und der Winkel zwischen diesen gemessen.
+# Aufgrund der bekannten Breite der Basislatte lässt sich daraus der Abstand vom Theodoliten zum Messpunkt bestimmen.
+# Zur verbesserten Genauigkeit wurde diese Messung jeweils 3x wiederholt. Aus der Datei wird also eine 4x3 Matrix gelesen.
+subtense_angles = np.loadtxt("Basislattenmessungen.txt", skiprows=1)
+# Es wird der Mittelwert der Winkelmessungen genommen, die Matrix ist nun also 4x1.
+subtense_angles = np.mean(subtense_angles, axis=1)
+# Die Winkel werden in Bogenmaß umgewandelt für die weitere Berechnung.
+subtense_angles = gradians_to_radians(subtense_angles)
+
+# Außerdem wurden orientierte Richtungen (in gon) zu den Messpunkten gemessen.
+# Hier wurde bereits der Mittelwert aus mehreren Messungen gebildet und ist in der Datei abgespeichert.
+# Die Matrix ist also 4x1.
+oriented_angles = np.loadtxt("Gemittelte Orientierte Richtungen.txt", skiprows=1)
+# Die Winkel werden in Bogenmaß umgewandelt für die weitere Berechnung.
+oriented_angles = gradians_to_radians(oriented_angles)
+
+# Zum Vergleich werden die in 2019 gemessenen Positionen der Messpunkte herangezogen.
+# Das Format dieser Datei enthält 2 Zeilen Header, und es werden abwechselnd
+# Y und X-Koordinaten der 4 Messpunkte in eine Zeile geschrieben.
+# Das Ergebnis hier ist also eine 2x4 Matrix.
+coordinates_2019 = np.loadtxt("Monitoringmessung November 2019.txt", skiprows=2)
+# Damit Werte für einen einzelnen Messpunkt in einer Zeile stehen (y/x), wird die Matrix transponiert.
+# Das Ergebnis ist also eine 4x2 Matrix.
+coordinates_2019 = coordinates_2019.transpose()
+
+"""
+
+Nun kann aus den eingelesenen Werten die Position der Messpunkte bestimmt werden.
+
+"""
+
 # Natürlich würde man für 4 Messpunkte niemals so einen algorithmischen Aufwand betreiben,
-# aber stellen wir uns einfach vor, es wären 40000 Messpunkte, und die Parallisierung würde
-# sich lohnen...
+# aber stellen wir uns einfach vor, es wären Millionen Messpunkte, und die Parallisierung
+# über Numpy würde sich lohnen...
 num_measurements = 4
+
+# Aus den Winkel-Messungen an der Basislatte lässt sich die Distanz vom Geodoliten zum Messpunkt berechnen.
+# Das Ergebnis ist eine 4x1 Matrix.
+subtense_distances = subtense_distance_from_angle(subtense_angles)
+
+# Es ist nun alles bekannt, was für die erste Hauptaufgabe benötigt wird.
+# Die benötigten Werte pro Messpunkt werden nun Zeilenweise in eine Matrix geschrieben.
+# Ergebnis ist eine 4x4 Matrix.
 forward_matrix = np.stack(
     [
         # Erste Spalte: y-Koordinate.
         # Da diese immer gleich ist, wird sie für alle Zeilen der Matrix wiederholt.
-        np.repeat(measuring_position[0], num_measurements),
+        np.repeat(theodolite_position[0], num_measurements),
         # Zweite Spalte: x-Koordinate. Analog zur y-Koordinate.
-        np.repeat(measuring_position[1], num_measurements),
+        np.repeat(theodolite_position[1], num_measurements),
         # Dritte Spalte: Entfernung zum Messpunkt.
         subtense_distances,
         # Vierte Spalte: Orientierte Richtung.
@@ -71,5 +107,47 @@ forward_matrix = np.stack(
     axis=1,
 )
 
-measurement_coordinates = np.apply_along_axis(forward_problem, 1, forward_matrix)
-print(measurement_coordinates)
+# `forward_problem` wird für jede Zeile der obigen Matrix aufgerufen,
+# und das Ergebnis ist eine 4x2 Matrix mit den y/x-Koordinaten der Messpunkte.
+coordinates_2022 = np.apply_along_axis(
+    forward_problem,
+    axis=1,
+    arr=forward_matrix,
+)
+
+# Jetzt lässt sich die Abweichung der neuen Messung zur historischen Messung berechnen.
+coordinates_delta = coordinates_2022 - coordinates_2019
+
+"""
+
+Es folgt die Ausgabe der Ergebnisse.
+
+"""
+
+print(">>>")
+print("Monitoringmessung")
+
+print("-------------------")
+print(f"Standpunkt X[m] = {theodolite_position[1]:.5f}")
+print(f"Standpunkt Y[m] = {theodolite_position[0]:.5f}")
+
+print("---")
+print("MP-Punkte 2019:")
+for i in range(num_measurements):
+    print(f"MP{i+1} X[m] = {coordinates_2019[i, 1]:.5f}")
+    print(f"MP{i+1} Y[m] = {coordinates_2019[i, 0]:.5f}")
+    print("")
+
+print("---")
+print("MP-Punkte 2022:")
+for i in range(num_measurements):
+    print(f"MP{i+1} X[m] = {coordinates_2022[i, 1]:.5f}")
+    print(f"MP{i+1} Y[m] = {coordinates_2022[i, 0]:.5f}")
+    print("")
+
+print("---")
+print("Vergleich:")
+for i in range(num_measurements):
+    print(f"MP{i+1} dX[mm] = {coordinates_delta[i, 1]*1000:.5f}")
+    print(f"MP{i+1} dY[mm] = {coordinates_delta[i, 0]*1000:.5f}")
+    print("")
