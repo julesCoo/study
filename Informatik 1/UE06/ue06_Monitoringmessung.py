@@ -9,12 +9,12 @@ Sofern der Abstand zur früheren Messung zu groß ist, kann von einem Hangrutsch
 
 import numpy as np
 
-
 """
 
 Wir beginnen mit der Definition einiger Funktionen:
 
 """
+
 
 # Winkel wurden in Altgrad gemessen, für die Berechnung müssen sie in Bogenmaß umgewandelt werden.
 def gradians_to_radians(gon):
@@ -27,15 +27,6 @@ def subtense_distance_from_angle(gamma):
     b = 2  # Es wurde in diesem Fall eine Basislatte mit einer Breite von 2m verwendet.
     s = (b / 2) / np.tan(gamma / 2)
     return s
-
-
-# Die Position eines Messpunkts lässt sich mit der ersten geodätischen Hauptaufgabe berechnen.
-def forward_problem(args):
-    # Argument dieser Funktion ist ein Numpy Array, das hier manuell entpackt werden muss.
-    y1, x1, s, phi = args
-    y2 = y1 + s * np.sin(phi)
-    x2 = x1 + s * np.cos(phi)
-    return y2, x2
 
 
 """
@@ -89,32 +80,17 @@ num_measurements = 4
 # Das Ergebnis ist eine 4x1 Matrix.
 subtense_distances = subtense_distance_from_angle(subtense_angles)
 
-# Es ist nun alles bekannt, was für die erste Hauptaufgabe benötigt wird.
-# Die benötigten Werte pro Messpunkt werden nun Zeilenweise in eine Matrix geschrieben.
-# Ergebnis ist eine 4x4 Matrix.
-forward_matrix = np.stack(
-    [
-        # Erste Spalte: y-Koordinate.
-        # Da diese immer gleich ist, wird sie für alle Zeilen der Matrix wiederholt.
-        np.repeat(theodolite_position[0], num_measurements),
-        # Zweite Spalte: x-Koordinate. Analog zur y-Koordinate.
-        np.repeat(theodolite_position[1], num_measurements),
-        # Dritte Spalte: Entfernung zum Messpunkt.
-        subtense_distances,
-        # Vierte Spalte: Orientierte Richtung.
-        oriented_angles,
-    ],
-    # Messwerte einer Messung werden in einer Zeile zusammengefasst.
-    axis=1,
-)
+# Es ist nun alles bekannt, was für die erste Hauptaufgabe benötigt wird:
+y = theodolite_position[0]
+x = theodolite_position[1]
+s = subtense_distances
+phi = oriented_angles
 
-# `forward_problem` wird für jede Zeile der obigen Matrix aufgerufen,
-# und das Ergebnis ist eine 4x2 Matrix mit den y/x-Koordinaten der Messpunkte.
-coordinates_2022 = np.apply_along_axis(
-    forward_problem,
-    axis=1,
-    arr=forward_matrix,
-)
+# Die y/x-Positionen der Messpunkte können Vektor-weise berechnet werden,
+# und dann in eine 4x2 Matrix zusammengefasst werden.
+coordinates_2022_y = y + s * np.sin(phi)
+coordinates_2022_x = x + s * np.cos(phi)
+coordinates_2022 = np.stack([coordinates_2022_y, coordinates_2022_x], axis=1)
 
 # Jetzt lässt sich die Abweichung der neuen Messung zur historischen Messung berechnen.
 coordinates_delta = coordinates_2022 - coordinates_2019
