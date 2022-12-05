@@ -29,7 +29,7 @@ def subtense_distance_from_angle(gamma):
     return s
 
 
-# Die Position eines Messpunkts lässt sich der ersten geodätischen Hauptaufgabe berechnen.
+# Die Position eines Messpunkts lässt sich mit der ersten geodätischen Hauptaufgabe berechnen.
 def forward_problem(args):
     # Argument dieser Funktion ist ein Numpy Array, das hier manuell entpackt werden muss.
     y1, x1, s, phi = args
