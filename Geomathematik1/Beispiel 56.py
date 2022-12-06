@@ -20,20 +20,21 @@ y2 = R2 * x
 d2 = (y2 - x).length()
 
 print(f"distance (simplified): {d1} LE")
-print(f"distance (full): {d2} LE")
+print(f"distance (full):       {d2} LE")
+print(f"difference:            {d1 - d2} LE")
+
+# # This gives us the radius of the circle in LE
+# origin = Vec3(0, 0, 0)
+# rotation_radius = (x - origin).length()
+
+# # The length of the arc that the satellite moved in 3 seconds, deduced from angle and radius
+# arc_length = rotation_radius * angle
 
 
-# This gives us the radius of the circle in LE
-origin = Vec3(0, 0, 0)
-rotation_radius = (x - origin).length()
+# # TODO: Why is this so different?
+# print(f"arc length: {arc_length} LE")
 
-# The length of the arc that the satellite moved in 3 seconds, deduced from angle and radius
-arc_length = rotation_radius * angle
+# # TODO: Why is this not 0?
+# print("{}°".format(math.degrees((x - origin).angle_between(rotation_axis))))
 
-# TODO: Why is this so different?
-print(f"arc length: {arc_length} LE")
-
-# TODO: Why is this not 0?
-print("{}°".format(math.degrees((x - origin).angle_between(rotation_axis))))
-
-# => Satellite does NOT circle around origin, but around a some point on the rotation axis
+# # => Satellite does NOT circle around origin, but around a some point on the rotation axis

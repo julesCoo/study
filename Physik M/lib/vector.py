@@ -55,6 +55,9 @@ class Vec2:
             self.y * scalar,
         )
 
+    def __rmul__(self, scalar: float) -> Vec2:
+        return self * scalar
+
     def __div__(self, scalar: float) -> Vec2:
         return self * (1 / scalar)
 
@@ -124,6 +127,9 @@ class Vec3:
             self.y * scalar,
             self.z * scalar,
         )
+
+    def __rmul__(self, scalar: float) -> Vec3:
+        return self * scalar
 
     def __truediv__(self, scalar: float) -> Vec3:
         return self * (1 / scalar)
