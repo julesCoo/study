@@ -185,15 +185,15 @@ class SphereCoords:
         z = r * sin(lat)
         return Vec3(x, y, z)
 
-    def ha1(self, oriented_angle: float, distance: float):
-        return ha1(self, oriented_angle, distance)
+    def ha1(self, oriented_angle: float, dist: float):
+        return ha1(self, oriented_angle, dist)
 
     def ha2(self, other: SphereCoords):
         return ha2(self, other)
 
     @classmethod
-    def from_phi_lamda(cls, phi: float, lamda: float):
-        return cls(phi, lamda)
+    def from_phi_lamda(cls, phi: float, lamda: float, r: float = 1):
+        return cls(phi, lamda, r)
 
     @classmethod
     def from_vec3(cls, p: Vec3):
@@ -210,36 +210,37 @@ class SphereCoords:
         return cls(lat, lon, r)
 
 
-def ha1(
-    point: SphereCoords,
-    oriented_angle: float,
-    distance: float,
-):
+def ha1(p: SphereCoords, oriented_angle: float, dist: float):
+    phi, lamda, r = p
+
     triangle = SphereTriangle.sws(
-        a=pi / 2 - point.phi,
-        b=distance,
+        a=pi / 2 - phi,
+        b=dist,
         gamma=oriented_angle,
     )
 
     point2 = SphereCoords.from_phi_lamda(
-        phi=pi / 2 - triangle.c,
-        lamda=triangle.beta + point.lamda,
+        pi / 2 - triangle.c,
+        triangle.beta + lamda,
+        r,
     )
+
     angle_back = tau - triangle.alpha
+
     return point2, angle_back
 
 
-def ha2(
-    point1: SphereCoords,
-    point2: SphereCoords,
-) -> tuple[float, float]:
-    triangle = SphereTriangle.sws(
-        a=pi / 2 - point1.phi,
-        b=pi / 2 - point2.phi,
-        gamma=point2.lamda - point1.lamda,
-    )
+def ha2(p1: SphereCoords, p2: SphereCoords):
+    phi1, lamda1, r1 = p1
+    phi2, lamda2, r2 = p2
+    assert r1 == r2
 
-    dist = triangle.c
+    triangle = SphereTriangle.sws(
+        a=pi / 2 - phi1,
+        b=pi / 2 - phi2,
+        gamma=lamda2 - lamda1,
+    )
+    dist = triangle.c * r1
     angle = triangle.beta
 
     return dist, angle

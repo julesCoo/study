@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Union
 from math import sqrt, sin, cos, acos, tau
 from itertools import product
 
@@ -52,21 +51,17 @@ class Vec3:
         )
 
     def length(self) -> float:
-        return self.norm()
-
-    def norm(self) -> float:
         return sqrt(self.x**2 + self.y**2 + self.z**2)
 
     def normalize(self) -> float:
-        norm = self.norm()
-        self.x /= norm
-        self.y /= norm
-        self.z /= norm
-        return norm
+        l = self.length()
+        self.x /= l
+        self.y /= l
+        self.z /= l
+        return l
 
     def normalized(self) -> Vec3:
-        norm = self.norm()
-        return Vec3(self.x / norm, self.y / norm, self.z / norm)
+        return self / self.length()
 
     def equals(self, other: Vec3, epsilon: float = 1e-6) -> bool:
         return (
@@ -76,7 +71,7 @@ class Vec3:
         )
 
     def angle_between(self, other: Vec3) -> float:
-        return acos(self.dot(other) / (self.norm() * other.norm()))
+        return acos(self.dot(other) / (self.length() * other.length()))
 
     def distance_to(self, other: Vec3) -> float:
         return sqrt(
@@ -142,7 +137,7 @@ class Mat3:
             (self.zx - other.zx, self.zy - other.zy, self.zz - other.zz),
         )
 
-    def __mul__(self, other: Union[float, Vec3, Mat3]) -> Vec3:
+    def __mul__(self, other: float | Vec3 | Mat3):
         if isinstance(other, float):
             return Mat3(
                 (self.xx * other, self.xy * other, self.xz * other),
@@ -268,6 +263,17 @@ class Mat3:
         return Mat3((1, 0, 0), (0, 1, 0), (0, 0, 1))
 
     @classmethod
+    def projection(cls, axis: Vec3) -> Mat3:
+        x, y, z = axis.normalized()
+
+        P = Mat3(
+            (x * x, x * y, x * z),
+            (y * x, y * y, y * z),
+            (z * x, z * y, z * z),
+        )
+        return P
+
+    @classmethod
     def from_euler_angles(
         cls,
         theta: float,
@@ -299,17 +305,6 @@ class Mat3:
                     cos(theta),
                 ),
             )
-
-    @classmethod
-    def projection(cls, axis: Vec3) -> Mat3:
-        x, y, z = axis.normalized()
-
-        P = Mat3(
-            (x * x, x * y, x * z),
-            (y * x, y * y, y * z),
-            (z * x, z * y, z * z),
-        )
-        return P
 
     @classmethod
     def from_axis_and_angle(
