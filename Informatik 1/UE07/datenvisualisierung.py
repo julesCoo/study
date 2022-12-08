@@ -130,7 +130,6 @@ xs = data_with_noise[:, 1]
 ys = data_with_noise[:, 2] - data[:, 2]
 
 # xy-Kurve als geschlossene Linie (Farbe aus Vorgabe entnommen).
-# Neu hier ist das Label der Kurve, das anschließend als Legende angezeigt wird.
 plt.plot(xs, ys, "-", color="#30729f", label="Rauschen")
 
 # Achsenbeschriftung, Titel und Legende
