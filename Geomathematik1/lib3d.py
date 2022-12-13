@@ -1,8 +1,85 @@
 from __future__ import annotations
-from typing import Union
-from math import sin, cos, acos, tau
-from lib3d.Vector import Vec3
-import itertools
+from math import sqrt, sin, cos, acos, tau
+from itertools import product
+
+
+class Vec3:
+    x: float
+    y: float
+    z: float
+
+    def __init__(self, x: float, y: float, z: float):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __repr__(self) -> str:
+        return f"({self.x:.3f}, {self.y:.3f}, {self.z:.3f})"
+
+    def __getitem__(self, index: int) -> float:
+        if index == 0:
+            return self.x
+        if index == 1:
+            return self.y
+        if index == 2:
+            return self.z
+        raise IndexError("index out of range")
+
+    def __add__(self, other: Vec3) -> Vec3:
+        return Vec3(self.x + other.x, self.y + other.y, self.z + other.z)
+
+    def __sub__(self, other: Vec3) -> Vec3:
+        return Vec3(self.x - other.x, self.y - other.y, self.z - other.z)
+
+    def __mul__(self, scale: float) -> Vec3:
+        return Vec3(self.x * scale, self.y * scale, self.z * scale)
+
+    def __rmul__(self, scale: float) -> Vec3:
+        return self * scale
+
+    def __truediv__(self, scale: float) -> Vec3:
+        return Vec3(self.x / scale, self.y / scale, self.z / scale)
+
+    def dot(self, other: Vec3) -> float:
+        return self.x * other.x + self.y * other.y + self.z * other.z
+
+    def cross(self, other: Vec3) -> Vec3:
+        return Vec3(
+            self.y * other.z - self.z * other.y,
+            self.z * other.x - self.x * other.z,
+            self.x * other.y - self.y * other.x,
+        )
+
+    def length(self) -> float:
+        return sqrt(self.x**2 + self.y**2 + self.z**2)
+
+    def normalize(self) -> float:
+        l = self.length()
+        self.x /= l
+        self.y /= l
+        self.z /= l
+        return l
+
+    def normalized(self) -> Vec3:
+        return self / self.length()
+
+    def equals(self, other: Vec3, epsilon: float = 1e-6) -> bool:
+        return (
+            abs(self.x - other.x) < epsilon
+            and abs(self.y - other.y) < epsilon
+            and abs(self.z - other.z) < epsilon
+        )
+
+    def angle_between(self, other: Vec3) -> float:
+        return acos(self.dot(other) / (self.length() * other.length()))
+
+    def distance_to(self, other: Vec3) -> float:
+        return sqrt(
+            (self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2
+        )
+
+    def projected_on(self, other: Vec3) -> Vec3:
+        return other * (self.dot(other) / other.dot(other))
 
 
 class Mat3:
@@ -60,7 +137,7 @@ class Mat3:
             (self.zx - other.zx, self.zy - other.zy, self.zz - other.zz),
         )
 
-    def __mul__(self, other: Union[float, Vec3, Mat3]) -> Vec3:
+    def __mul__(self, other: float | Vec3 | Mat3):
         if isinstance(other, float):
             return Mat3(
                 (self.xx * other, self.xy * other, self.xz * other),
@@ -158,7 +235,7 @@ class Mat3:
         return axis, angle
 
     def euler_angles(self) -> tuple[float, float, float]:
-        for (flipTheta, flipPsi, flipPhi) in itertools.product(
+        for (flipTheta, flipPsi, flipPhi) in product(
             [False, True],
             [False, True],
             [False, True],
@@ -184,6 +261,17 @@ class Mat3:
     @classmethod
     def identity(cls) -> Mat3:
         return Mat3((1, 0, 0), (0, 1, 0), (0, 0, 1))
+
+    @classmethod
+    def projection(cls, axis: Vec3) -> Mat3:
+        x, y, z = axis.normalized()
+
+        P = Mat3(
+            (x * x, x * y, x * z),
+            (y * x, y * y, y * z),
+            (z * x, z * y, z * z),
+        )
+        return P
 
     @classmethod
     def from_euler_angles(
@@ -248,7 +336,7 @@ class Mat3:
         else:
             x, y, z = axis.normalized()
 
-            P = Mat3.from_vector_as_projection(axis)
+            P = Mat3.projection(axis)
 
             A = Mat3(
                 (0, -z, y),
@@ -257,3 +345,22 @@ class Mat3:
             )
 
             return P + (I - P) * cos(angle) + A * sin(angle)
+
+
+# Vorwärtsschnitt
+def vws(
+    A: Vec3,
+    B: Vec3,
+    AC: Vec3,
+    BC: Vec3,
+) -> Vec3:
+    AB = B - A
+
+    sAB = AC.dot(AB) / AC.dot(BC)
+    C = A + sAB * AB
+
+    ### Alternative:
+    # sAC = AB.dot(AC) / AB.dot(BC)
+    # C = A + sAC * AC
+
+    return C

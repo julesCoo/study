@@ -52,10 +52,11 @@ def xy_from_id(id):
 # Es sollen einige Marker für bestimmte Messpunkte gezeichnet werden.
 # Diese Funktion bekommt die Liste der IDs und die Art der Darstellung,
 # und zeichnet entsprechend viele Marker in den aktuellen Plot.
-def plot_ids(ids, marker):
+def plot_ids(ids, marker, label):
     for id in ids:
         x, y = xy_from_id(id)
-        plt.plot(x, y, marker)
+        plt.plot(x, y, marker, label=label)
+        label = None  # Das Label nur 1x setzen!
 
 
 """
@@ -70,19 +71,20 @@ ys = data[:, 2]
 
 # xy-Kurve als gestrichelte Linie (Farbe aus Vorgabe entnommen).
 # Fläche unter der Funktion in semi-transparentem Magenta.
-plt.plot(xs, ys, "--", color="#30729f")
-plt.fill_between(xs, ys, 0, color="m", alpha=0.2)
+plt.plot(xs, ys, "--", color="#30729f", label="Funktion")
+plt.fill_between(xs, ys, 0, color="m", alpha=0.2, label="Farbfüllung")
 
 # Spezielle IDs laut Vorgabe mit verschiedenen Marker-Symbolen.
-plot_ids([345, 219], "g>")
-plot_ids([198, 166, 315, 280, 90, 388], "b*")
-plot_ids([48, 573, 653, 243, 387, 409], "ro")
+plot_ids([345, 219], marker="g>", label="Start-End")
+plot_ids([198, 166, 315, 280, 90, 388], marker="b*", label="Max")
+plot_ids([48, 573, 653, 243, 387, 409], marker="ro", label="Min")
 
-# Achsenbeschriftung und Titel
+# Achsenbeschriftung, Titel und Legende
 plt.suptitle("Frequenzmodulation", fontweight="bold")
 plt.title("mit Δω = 0.5 und Ω=ω/6")
 plt.xlabel("Winkel [rad]")
 plt.ylabel("Funktion [y = sin(6x . 3cos(x))]")
+plt.legend(loc="center")
 
 # Plot speichern und schließen, damit der nächste Plot begonnen werden kann.
 plt.savefig("plot_a.png", dpi=400)
@@ -100,14 +102,15 @@ ys = data_with_noise[:, 2]
 
 # xy-Kurve als gestrichelte Linie (Farbe aus Vorgabe entnommen).
 # Fläche unter der Funktion in semi-transparentem Magenta.
-plt.plot(xs, ys, "--", color="#30729f")
-plt.fill_between(xs, ys, 0, color="m", alpha=0.2)
+plt.plot(xs, ys, "--", color="#30729f", label="Funktion")
+plt.fill_between(xs, ys, 0, color="m", alpha=0.2, label="Farbfüllung")
 
-# Achsenbeschriftung und Titel
+# Achsenbeschriftung, Titel und Legende
 plt.suptitle("Frequenzmodulation", fontweight="bold")
 plt.title("mit Δω = 0.5 und Ω=ω/6 + Rauschen")
 plt.xlabel("Winkel [rad]")
 plt.ylabel("Funktion [y = sin(6x . 3cos(x))]")
+plt.legend(loc="center")
 
 # Plot speichern und schließen, damit der nächste Plot begonnen werden kann.
 plt.savefig("plot_b.png", dpi=400)
@@ -130,11 +133,11 @@ ys = data_with_noise[:, 2] - data[:, 2]
 # Neu hier ist das Label der Kurve, das anschließend als Legende angezeigt wird.
 plt.plot(xs, ys, "-", color="#30729f", label="Rauschen")
 
-# Achsenbeschriftung, Titel und Legende.
+# Achsenbeschriftung, Titel und Legende
 plt.suptitle("Rauschen aus Differenzbildung", fontweight="bold")
 plt.xlabel("Winkel [rad]")
 plt.ylabel("Differenz")
-plt.legend()
+plt.legend(loc="upper right")
 
 # Plot speichern und schließen, der Konsistenz wegen.
 plt.savefig("plot_c.png", dpi=400)
