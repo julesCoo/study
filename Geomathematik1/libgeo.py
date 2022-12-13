@@ -15,6 +15,33 @@ class Angle:
     def to_deg(self):
         return 360 * (self.radians / tau)
 
+    def to_deg_str(self, precision: int = 5):
+        degrees = 360 * (self.radians / tau)
+        is_negative = degrees < 0
+
+        rest = abs(degrees)
+
+        dd = int(rest)
+        rest -= dd
+        rest *= 60
+
+        mm = int(rest)
+        rest -= mm
+        rest *= 60
+
+        ss = round(rest, precision)
+        if ss == 60:
+            ss = 0
+            mm += 1
+            if mm == 60:
+                mm = 0
+                dd += 1
+
+        if is_negative:
+            dd *= -1
+
+        return f"{dd:02d}°{mm:02d}'{ss:02f}\""
+
     def to_gon(self):
         return 400 * (self.radians / tau)
 
@@ -50,8 +77,17 @@ class Angle:
         return cls(radians)
 
     @classmethod
-    def from_deg(cls, degrees: float):
-        return cls(tau * degrees / 360)
+    def from_deg(cls, degrees: float, minutes: float = 0, seconds: float = 0):
+        is_negative = degrees < 0
+
+        degrees = abs(degrees)
+        degrees += minutes / 60
+        degrees += seconds / (60 * 60)
+        if is_negative:
+            degrees *= -1
+
+        rad = tau * degrees / 360
+        return cls.from_rad(rad)
 
     @classmethod
     def from_gon(cls, dd: float, mm: float = 0, ss: float = 0):

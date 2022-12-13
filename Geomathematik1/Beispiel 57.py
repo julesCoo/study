@@ -1,7 +1,5 @@
 import math
-from lib3d.Matrix import Mat3
-from lib3d.Vector import Vec3
-
+from lib3d import Mat3, Vec3
 
 R1 = Mat3.from_axis_and_angle(
     axis=Vec3(2, 0, -1),

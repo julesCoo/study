@@ -1,5 +1,6 @@
 from __future__ import annotations
 from math import asin, atan2, cos, sin, pi, tau, sqrt, atan
+from libgeo import Angle
 from lib3d import Vec3
 
 # A spherical triangle is created from the intersection of 3 great circles
@@ -84,17 +85,17 @@ class SphereTriangle:
         a, b, c = cls._www(alpha, beta, gamma)
         return cls(a, b, c, alpha, beta, gamma)
 
-    # Sine rule
+    # Cosine rule for sides
     # Given 2 sides of a spheric triangle, and the angle between them, calculate the third side.
     def _sws(b: float, c: float, alpha: float):
-        sin_a_half = sqrt(sin((b - c) / 2) ** 2 + sin(b) + sin(c) + sin(alpha / 2) ** 2)
+        sin_a_half = sqrt(sin((b - c) / 2) ** 2 + sin(b) * sin(c) * sin(alpha / 2) ** 2)
         cos_a_half = sqrt(cos((b + c) / 2) ** 2 + sin(b) * sin(c) * cos(alpha / 2) ** 2)
         tan_a_half = sin_a_half / cos_a_half
         a_half = atan(tan_a_half)
         a = 2 * a_half
         return a
 
-    # Cosine rule
+    # Cosine rule for angles
     # Given a side of a spheric triangle, and the two angles on this side, calculate the third angle.
     def _wsw(a: float, beta: float, gamma: float):
         sin_alpha_half = sqrt(
@@ -169,6 +170,15 @@ class SphereCoords:
         self.lon = lon
         self.r = r
 
+    def __repr__(self) -> str:
+        phi = Angle.from_rad(self.lat).to_deg_str()
+        lam = Angle.from_rad(self.lon).to_deg_str()
+
+        if self.r == 1:
+            return f"(ϕ: {phi}, λ: {lam})"
+        else:
+            return f"(ϕ: {phi}, λ: {lam}, r: {self.r})"
+
     def __getitem__(self, index: int) -> float:
         if index == 0:
             return self.lat
@@ -185,15 +195,43 @@ class SphereCoords:
         z = r * sin(lat)
         return Vec3(x, y, z)
 
-    def ha1(self, oriented_angle: float, dist: float):
-        return ha1(self, oriented_angle, dist)
+    def ha1(self, a12: float, s12: float):
+        phi1, lam1, r = self
+
+        triangle = SphereTriangle.sws(
+            a=pi / 2 - phi1,
+            b=s12,
+            gamma=a12,
+        )
+
+        p2 = SphereCoords.from_phi_lamda(
+            phi=pi / 2 - triangle.c,
+            lam=lam1 + triangle.beta,
+            r=r,
+        )
+
+        a21 = tau - triangle.alpha
+
+        return p2, a21
 
     def ha2(self, other: SphereCoords):
-        return ha2(self, other)
+        phi1, lam1, r1 = self
+        phi2, lam2, r2 = other
+        assert r1 == r2
+
+        triangle = SphereTriangle.sws(
+            a=pi / 2 - phi1,
+            b=pi / 2 - phi2,
+            gamma=lam2 - lam1,
+        )
+        dist = triangle.c * r1
+        angle = triangle.beta
+
+        return dist, angle
 
     @classmethod
-    def from_phi_lamda(cls, phi: float, lamda: float, r: float = 1):
-        return cls(phi, lamda, r)
+    def from_phi_lamda(cls, phi: float, lam: float, r: float = 1):
+        return cls(phi, lam, r)
 
     @classmethod
     def from_vec3(cls, p: Vec3):
@@ -208,39 +246,3 @@ class SphereCoords:
         lon = atan2(y, x)
 
         return cls(lat, lon, r)
-
-
-def ha1(p: SphereCoords, oriented_angle: float, dist: float):
-    phi, lamda, r = p
-
-    triangle = SphereTriangle.sws(
-        a=pi / 2 - phi,
-        b=dist,
-        gamma=oriented_angle,
-    )
-
-    point2 = SphereCoords.from_phi_lamda(
-        pi / 2 - triangle.c,
-        triangle.beta + lamda,
-        r,
-    )
-
-    angle_back = tau - triangle.alpha
-
-    return point2, angle_back
-
-
-def ha2(p1: SphereCoords, p2: SphereCoords):
-    phi1, lamda1, r1 = p1
-    phi2, lamda2, r2 = p2
-    assert r1 == r2
-
-    triangle = SphereTriangle.sws(
-        a=pi / 2 - phi1,
-        b=pi / 2 - phi2,
-        gamma=lamda2 - lamda1,
-    )
-    dist = triangle.c * r1
-    angle = triangle.beta
-
-    return dist, angle
