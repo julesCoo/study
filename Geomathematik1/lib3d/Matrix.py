@@ -26,7 +26,7 @@ class Mat3:
         self.yx, self.yy, self.yz = y
         self.zx, self.zy, self.zz = z
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return (
             f"|{self.xx:7.4f}, {self.xy:7.4f}, {self.xz:7.4f}|\n"
             + f"|{self.yx:7.4f}, {self.yy:7.4f}, {self.yz:7.4f}|\n"
@@ -219,6 +219,15 @@ class Mat3:
             )
 
     @classmethod
+    def from_vector_as_projection(cls, axis: Vec3) -> Mat3:
+        x, y, z = axis.normalized()
+        return Mat3(
+            (x * x, x * y, x * z),
+            (y * x, y * y, y * z),
+            (z * x, z * y, z * z),
+        )
+
+    @classmethod
     def from_axis_and_angle(
         cls,
         axis: Vec3,
@@ -239,11 +248,7 @@ class Mat3:
         else:
             x, y, z = axis.normalized()
 
-            P = Mat3(
-                (x * x, x * y, x * z),
-                (y * x, y * y, y * z),
-                (z * x, z * y, z * z),
-            )
+            P = Mat3.from_vector_as_projection(axis)
 
             A = Mat3(
                 (0, -z, y),

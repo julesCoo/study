@@ -12,7 +12,7 @@ class Vec3:
         self.y = y
         self.z = z
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"({self.x:.3f}, {self.y:.3f}, {self.z:.3f})"
 
     def __getitem__(self, index: int) -> float:

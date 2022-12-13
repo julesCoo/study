@@ -1,4 +1,5 @@
-import math
+# import math
+from math import tau, degrees
 from lib3d.Matrix import Mat3
 from lib3d.Vector import Vec3
 
@@ -9,7 +10,9 @@ rotation_period = 12 * 60 * 60  # 12 hours in seconds
 x = Vec3(-1.4, -2.7, 2.8)
 
 # In 3 seconds, the satellite moves this angle (in radians)
-angle = math.tau * 3 / rotation_period
+angle = tau * 3 / rotation_period
+
+r = x.distance_to(Mat3.from_vector_as_projection(rotation_axis) * x)
 
 R1 = Mat3.from_axis_and_angle(rotation_axis, angle, infinitesimal=True)
 y1 = R1 * x
@@ -19,8 +22,12 @@ R2 = Mat3.from_axis_and_angle(rotation_axis, angle, infinitesimal=False)
 y2 = R2 * x
 d2 = (y2 - x).length()
 
+d3 = angle * r
+
+print(f"rotation angle:        {degrees(angle)}°")
 print(f"distance (simplified): {d1} LE")
 print(f"distance (full):       {d2} LE")
+print(f"distance (exact):      {d3} LE")
 print(f"difference:            {d1 - d2} LE")
 
 # # This gives us the radius of the circle in LE

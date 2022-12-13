@@ -4,7 +4,6 @@ from lib3d.Vector import Vec3
 
 # Satellite moves on circle in space
 # Time from x0->x1 and x1->x2 is equal
-
 x0 = Vec3(2, 1, 1)
 x1 = Vec3(2, 7, 1) / 3
 x2 = Vec3(-2, 5, 5) / 3
