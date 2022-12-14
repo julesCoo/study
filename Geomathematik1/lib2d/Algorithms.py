@@ -92,15 +92,14 @@ def Vorwärtsschnitt_Winkel(
     alpha: Angle,
     beta: Angle,
 ) -> Point:
-
     sAB, vAB = HA2(A, B)
-    sAC = sAB * beta.sin() / (alpha + beta).sin()
-    sBC = sAB * alpha.sin() / (alpha + beta).sin()
 
+    sAC = sAB * beta.sin() / (alpha + beta).sin()
     vAC = vAB + alpha
     C = HA1(A, sAC, vAC)
 
     # Alternative:
+    # sBC = sAB * alpha.sin() / (alpha + beta).sin()
     # vBC = vAB + (gon(200) - beta)
     # C = HA1(B, sBC, vBC)
     return C
