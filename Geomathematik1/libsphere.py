@@ -240,6 +240,9 @@ class SphereCoords:
         dist = triangle.c * r1
         angle = triangle.beta
 
+        if lam1 > lam2:
+            angle = radians(360) - angle
+
         return dist, angle
 
     @classmethod
