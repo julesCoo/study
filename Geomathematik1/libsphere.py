@@ -135,15 +135,13 @@ class SphereTriangle:
     # Half-angle formula
     def _sss(a: float, b: float, c: float):
         s = (a + b + c) / 2
-        tan_alpha_half = sqrt(sin(s - b) * sin(s - c) / (sin(s) * sin(s - a)))
-        tan_beta_half = sqrt(sin(s - a) * sin(s - c) / (sin(s) * sin(s - b)))
-        tan_gamma_half = sqrt(sin(s - a) * sin(s - b) / (sin(s) * sin(s - c)))
-        alpha_half = atan(tan_alpha_half)
-        beta_half = atan(tan_beta_half)
-        gamma_half = atan(tan_gamma_half)
-        alpha = 2 * alpha_half
-        beta = 2 * beta_half
-        gamma = 2 * gamma_half
+        ss = sin(s)
+        ssa = sin(s - a)
+        ssb = sin(s - b)
+        ssc = sin(s - c)
+        alpha = 2 * atan(sqrt(ssb * ssc / (ss * ssa)))
+        beta = 2 * atan(sqrt(ssa * ssc / (ss * ssb)))
+        gamma = 2 * atan(sqrt(ssa * ssb / (ss * ssc)))
         return alpha, beta, gamma
 
     # Unnamed helper method
