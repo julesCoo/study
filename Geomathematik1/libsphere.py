@@ -1,5 +1,5 @@
 from __future__ import annotations
-from math import asin, atan2, cos, sin, pi, tau, sqrt, atan
+from math import asin, atan2, cos, degrees, radians, sin, pi, tau, sqrt, atan
 from libgeo import Angle
 from lib3d import Vec3
 
@@ -28,6 +28,9 @@ class SphereTriangle:
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
+
+    def __repr__(self) -> str:
+        return f"SphereTriangle({self.a}, {self.b}, {self.c}, {self.alpha}, {self.beta}, {self.gamma})"
 
     @classmethod
     def sws(cls, a: float, b: float, gamma: float) -> SphereTriangle:
@@ -195,22 +198,34 @@ class SphereCoords:
         z = r * sin(lat)
         return Vec3(x, y, z)
 
-    def ha1(self, a12: float, s12: float):
+    def ha1(self, s12: float, a12: float):
         phi1, lam1, r = self
 
-        triangle = SphereTriangle.sws(
-            a=pi / 2 - phi1,
-            b=s12,
-            gamma=a12,
-        )
+        if a12 < radians(180):
+            triangle = SphereTriangle.sws(
+                a=radians(90) - phi1,
+                b=s12,
+                gamma=a12,
+            )
+            p2 = SphereCoords.from_phi_lamda(
+                phi=radians(90) - triangle.c,
+                lam=lam1 + triangle.beta,
+                r=r,
+            )
+            a21 = radians(360) - triangle.alpha
 
-        p2 = SphereCoords.from_phi_lamda(
-            phi=pi / 2 - triangle.c,
-            lam=lam1 + triangle.beta,
-            r=r,
-        )
-
-        a21 = tau - triangle.alpha
+        else:
+            triangle = SphereTriangle.sws(
+                a=s12,
+                b=radians(90) - phi1,
+                gamma=radians(360) - a12,
+            )
+            p2 = SphereCoords.from_phi_lamda(
+                phi=radians(90) - triangle.c,
+                lam=lam1 - triangle.alpha,
+                r=r,
+            )
+            a21 = triangle.beta
 
         return p2, a21
 

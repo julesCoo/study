@@ -218,7 +218,7 @@ class Mat3:
     def axis_and_angle(self) -> tuple[Vec3, float]:
         # Rotate an arbitrary vector x into vector y
         x = Vec3(0, 0, 1)
-        y = self * x
+        y: Vec3 = self * x
 
         # Take the (normalized) vector between x and y, which lies in the rotation plane
         h = y - x
