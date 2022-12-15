@@ -31,6 +31,9 @@ class Point:
     def __mul__(self, scale: float) -> Point:
         return Point(self.x * scale, self.y * scale)
 
+    def __truediv__(self, scale: float) -> Point:
+        return Point(self.x / scale, self.y / scale)
+
     def ha1(self, s: float, v: float):
         return Point(
             self.x + s * cos(v),
