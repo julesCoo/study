@@ -1,5 +1,5 @@
-from lib3d import Vec3, Mat3
-from libgeo import Angle
+from libgeo import fmt_gon_str, from_gon
+from lib3d import Mat3
 from libsphere import SphereCoords
 
 """
@@ -12,21 +12,21 @@ Measurement Data
 #   P1: Fort Davis, TX
 #   P2: Mammoth Lakes, CA
 #   P3: Columbus, OH
-P1_lat = Angle.from_gon(30, 38).to_rad()
-P1_lon = Angle.from_gon(-103, 57).to_rad()
+P1_lat = from_gon(30, 38)
+P1_lon = from_gon(-103, 57)
 
-P2_lat = Angle.from_gon(37, 38).to_rad()
-P2_lon = Angle.from_gon(-118, 56).to_rad()
+P2_lat = from_gon(37, 38)
+P2_lon = from_gon(-118, 56)
 
-P3_lat = Angle.from_gon(40).to_rad()
-P3_lon = Angle.from_gon(-83).to_rad()
+P3_lat = from_gon(40)
+P3_lon = from_gon(-83)
 
 # Displacements of the original positions have been measured for the first two stations, given as delta latitude/longitude.
-P1_lat_delta = Angle.from_gon(0, 0, -0.02033).to_rad()
-P1_lon_delta = Angle.from_gon(0, 0, 0.01034).to_rad()
+P1_lat_delta = from_gon(0, 0, -0.02033)
+P1_lon_delta = from_gon(0, 0, 0.01034)
 
-P2_lat_delta = Angle.from_gon(0, 0, -0.02506).to_rad()
-P2_lon_delta = Angle.from_gon(0, 0, 0.01119).to_rad()
+P2_lat_delta = from_gon(0, 0, -0.02506)
+P2_lon_delta = from_gon(0, 0, 0.01119)
 
 
 """
@@ -99,8 +99,8 @@ Q3_lat, Q3_lon, _ = SphereCoords.from_vec3(Q3)
 P3_lat_delta = Q3_lat - P3_lat
 P3_lon_delta = Q3_lon - P3_lon
 
-print(f"db (Columbus, OH): {Angle(P3_lat_delta).to_gon_str(20)}")
-print(f"dl (Columbus, OH): {Angle(P3_lon_delta).to_gon_str(20)}")
+print(f"db (Columbus, OH): {fmt_gon_str(P3_lat_delta, precision=20)}")
+print(f"dl (Columbus, OH): {fmt_gon_str(P3_lon_delta, precision=20)}")
 
 
 R_ = Mat3.from_axis_and_angle(rotation_axis, angle_10y, infinitesimal=True)
@@ -110,5 +110,5 @@ P3_lat_delta_ = Q3_lat_ - P3_lat
 P3_lon_delta_ = Q3_lon_ - P3_lon
 
 print("Using infinitesimal rotation matrix:")
-print(f"db (Columbus, OH): {Angle(P3_lat_delta_).to_gon_str(20)}")
-print(f"dl (Columbus, OH): {Angle(P3_lon_delta_).to_gon_str(20)}")
+print(f"db (Columbus, OH): {fmt_gon_str(P3_lat_delta_, precision=20)}")
+print(f"dl (Columbus, OH): {fmt_gon_str(P3_lon_delta_, precision=20)}")
