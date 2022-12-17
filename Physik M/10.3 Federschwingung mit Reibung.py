@@ -9,8 +9,11 @@ vy = -0.04  # m/s
 friction = -0.5  # dvy/dt
 
 dt = 1e-6
-for i in np.arange(0, 3, dt):
+for _ in np.arange(0, 3, dt):
+    f_friction = friction * vy
+    f_spring = -k * y
+    ay = (f_friction + f_spring) / mass
+    vy += ay * dt
     y += vy * dt
-    vy += (friction * vy - k * y) / mass * dt
 
 print(y)
