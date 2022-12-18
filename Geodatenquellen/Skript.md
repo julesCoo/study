@@ -69,10 +69,6 @@ KML - Keyhole Markup Language (Google Earth)
 SHP - Shapefile (ESRI)
 DXF - Drawing Exchange Format (AutoCAD)
 
-## Tools
-
-FME - Feature Manipulation Engine
-
 # Geodateninfrastruktur
 
 GDI - Geodateninfrastruktur
@@ -84,6 +80,7 @@ W3C - World Wide Web Consortium (HTML)
 OGC - Open Geospatial Consortium
 ISO - International Organization for Standardization
 CEN - European Committee for Standardization ("EU-ISO")
+AGEO - Östereichischer Dachverband für Geoinformation
 
 ## Normen
 
@@ -97,10 +94,19 @@ geoportal.de - Geodateninfrastruktur Deutschland
 geoland.at - Geodateninfrastruktur Österreich
 basemap.at - Basiskarte Österreich
 gip.gv.at - Graphenintegrations-Plattform (Verkehr)
+UDK - Umweltdatenkatalog
+
+## Tools
+
+FME - Feature Manipulation Engine
+WMS - Web Map Service
+WFS - Web Feature Service
+WCS - Web Coverage Service
+Gazetteers - Georeferenzierte Adressen
 
 # Metadaten
 
-# Qualität
+MDB - Metadatenbank
+MIS - Metainformationssystem
 
-Wir sind zu 4. auf eine Hütte in den Bergen gefahren. Das war Anfang Dezember. Draußen hat es sehr viel geschnien, was wirklich traumhaft vorweihnachtlich war. Zwischendrin ist auch mal der Strom ausgefallen, was das "eingeschneit auf einer Hütte"-Erlebnis noch verstärkt hat.
-Wir hatten einen Whirlpool und eine Sauna, die wir reichlich genutzt haben, haben gekocht, getrunken, Pantomime gespielt und magischen Feenstaub eingeatmet. Du kannst dir selbst ausdenken, welche Wirkungen dieser hatte. Schreib mir bitte ein Review über die Tage in Form einer Buch-Rezension. Verwende möglichst intelligent klingende, hochgestochene Wörter. 400 Wörter, auf deutsch.
+# Qualität
