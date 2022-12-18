@@ -81,6 +81,7 @@ ortho_img_2004 = read_img("O2004_2385c_A3_1m.tif")
 
 surface_1953 = read_surface_data("kr_53_A3_o25.dat")
 surface_1999 = read_surface_data("kr_99_A3_o25.dat")
+surface_2004 = read_surface_data("kr_9904_all.dat")
 
 polyline_tear_edge = read_polyline("Anrisskante.bln")
 polygon_tearoff_edge = read_polyline("Abbruchkante.bln")
@@ -105,21 +106,26 @@ grid_x, grid_y = np.meshgrid(
 grid_xy = np.vstack((grid_x.flatten(), grid_y.flatten())).T
 
 # We can then interpolate the height values of each grid point using the surface data.
-def interpolate_surface(surface: DataFrame) -> np.ndarray:
+def interpolate_surface(surface: DataFrame, x_column, y_column, z_column) -> np.ndarray:
     return interpolate.griddata(
-        points=(surface["X[m]"], surface["Y[m]"]),
-        values=surface["Z[m]"],
+        points=(surface[x_column], surface[y_column]),
+        values=surface[z_column],
         xi=(grid_x, grid_y),
         method="linear",
     )
 
 
-grid_z_1953 = interpolate_surface(surface_1953)
-grid_z_1999 = interpolate_surface(surface_1999)
+grid_z_1953 = interpolate_surface(surface_1953, "X[m]", "Y[m]", "Z[m]")
+grid_z_1999 = interpolate_surface(surface_1999, "X[m]", "Y[m]", "Z[m]")
 
 # Calculate the height difference between the measurements in 1953 and 1999.
 # This will be used for visualization later.
-grid_z_diff = grid_z_1953 - grid_z_1999
+grid_z_diff_1999 = grid_z_1953 - grid_z_1999
+
+
+# The difference between 1999 and 2004 can be read directly from the surface data
+# of 2004.
+grid_z_diff_2004 = interpolate_surface(surface_2004, "X1[m]", "Y1[m]", "dZ[m]")
 
 
 """
@@ -133,31 +139,31 @@ Surface Grid Visualization
 # First, we will plot contour lines in all the images.
 # For this, the height values need to be clipped and binned into a reasonable range.
 # Most of the height values are between 1500 and 2100 meters, so we will use this range and bin the values into 50 meter steps.
-z_min, z_max, z_steps = 1500, 2100, 50
+z_min, z_max, z_step = 1500, 2100, 50
 
 # Secondly, we will plot the height difference per pixel using a color map.
 # Since we have difference values for every pixel of the ortho images (except some border pixels with undefined height),
 # and we only want to show the data inside the region of interest, we need to create a mask for the data.
 
 # This creates a closed path from the polyline data, which we can use to determine if a point is inside the region of interest.
-# We then create a 2d array, which maps each pixel to a boolean value indicating if it is inside the region of interest.
+# We then create a 2d mask array, which maps each pixel to a boolean value indicating if it is outside the region of interest.
 region_path = Path(polyline_region[["X[m]", "Y[m]"]].values)
-is_in_region = region_path.contains_points(grid_xy).reshape(grid_x.shape)
+region_mask = np.logical_not(region_path.contains_points(grid_xy).reshape(grid_x.shape))
 
 # And apply this as a mask to the height difference data.
-# Since the mask function throws out values where the mask is true, we need to invert it first.
-grid_z_diff = np.ma.masked_array(
-    grid_z_diff,
-    mask=np.logical_not(is_in_region),
+grid_z_diff_1999 = np.ma.masked_array(
+    grid_z_diff_1999,
+    mask=region_mask,
+)
+grid_z_diff_2004 = np.ma.masked_array(
+    grid_z_diff_2004,
+    mask=region_mask,
 )
 
 # The height difference will be visualized via a custom color map.
 # We want to show a range of -5 to 17 meters, and fade out the colorization between +- 0.5 meters,
 # because no significant change happened in this area.
-dz_min, dz_max, dz_steps = -5, 17, 1
-
-
-def create_diff_colormap():
+def create_diff_colormap(dz_min, dz_max):
     # Use different base colormaps for positive and negative values
     top = cm.get_cmap("autumn_r")
     bottom = cm.get_cmap("summer")
@@ -178,10 +184,11 @@ def create_diff_colormap():
         # Between +- 0.5 and 2 meters, we slowly fade in the color to avoid hard transitions.
         colors[i, -1] = np.interp(abs(dz), [0.5, 2], [0, 1])
 
-    return ListedColormap(colors)
+    cmap = ListedColormap(colors)
+    cmap.set_over(top(255))
+    cmap.set_under(bottom(0))
+    return cmap
 
-
-cmap_diff = create_diff_colormap()
 
 """
 
@@ -195,8 +202,11 @@ def plot_basemap(title: str, ortho_image: np.ndarray, output_file: str):
 
     fig.suptitle("Hangrutschung im Blaubachgraben", fontsize=14, fontweight="bold")
     ax.set_title(title)
+
+    ax.set_xlim(x_min, x_max)
     ax.set_xlabel("east [m]")
-    ax.set_ylabel("north [m]")
+
+    ax.set_ylim(y_min, y_max)
     ax.set_ylabel("north [m]")
 
     ax.imshow(ortho_image, extent=[x_min, x_max, y_min, y_max], cmap="gray")
@@ -205,7 +215,7 @@ def plot_basemap(title: str, ortho_image: np.ndarray, output_file: str):
         grid_x,
         grid_y,
         grid_z_1999,
-        levels=np.arange(z_min, z_max, z_steps),
+        levels=np.arange(z_min, z_max, z_step),
         colors="black",
         linewidths=0.75,
     )
@@ -241,36 +251,6 @@ def plot_basemap(title: str, ortho_image: np.ndarray, output_file: str):
 
     ax.legend(loc="upper right")
 
-    # Save to output file
-    fig.savefig(result_file(output_file), dpi=400)
-
-    return fig, ax
-
-
-"""
-
-Thematic Map Generation
-
-"""
-
-
-def plot_thematic_map(title: str, basemap: Tuple[Figure, Axes], output_file: str):
-    fig, ax = basemap
-
-    ax.set_title(title)
-
-    diff_colors = ax.contourf(
-        grid_x,
-        grid_y,
-        grid_z_diff,
-        levels=np.arange(dz_min, dz_max, dz_steps),
-        cmap=cmap_diff,
-    )
-
-    diff_colors_bar = fig.colorbar(diff_colors)
-    diff_colors_bar.ax.set_title("$\Delta$H [m]")
-
-    # Save to output file
     fig.savefig(result_file(output_file), dpi=400)
 
     return fig, ax
@@ -281,19 +261,76 @@ basemap_1953 = plot_basemap(
     ortho_image=ortho_img_1953,
     output_file="Grundkarte_1953.png",
 )
-# basemap_1999 = plot_basemap(
-#     title="Grundkarte 1999",
-#     ortho_image=ortho_img_1999,
-#     output_file="Grundkarte_1999.png",
-# )
-# basemap_2004 = plot_basemap(
-#     title="Grundkarte 2004",
-#     ortho_image=ortho_img_2004,
-#     output_file="Grundkarte_2004.png",
-# )
+basemap_1999 = plot_basemap(
+    title="Grundkarte 1999",
+    ortho_image=ortho_img_1999,
+    output_file="Grundkarte_1999.png",
+)
+basemap_2004 = plot_basemap(
+    title="Grundkarte 2004",
+    ortho_image=ortho_img_2004,
+    output_file="Grundkarte_2004.png",
+)
 
-plot_thematic_map(
-    title="Differenz der Geländehöhen 1953 - 1999",
+"""
+
+Thematic Map Generation
+
+"""
+
+
+def plot_diffmap(
+    title: str,
+    basemap: Tuple[Figure, Axes],
+    output_file: str,
+    grid_z: np.ndarray,
+    dz_range: Tuple[float, float],
+    extend="neither",
+):
+    dz_min, dz_max = dz_range
+
+    fig, ax = basemap
+    ax.set_title(title)
+
+    diff_colors = ax.contourf(
+        grid_x,
+        grid_y,
+        grid_z,
+        levels=np.arange(dz_min, dz_max, 1),
+        cmap=create_diff_colormap(dz_min, dz_max),
+        extend=extend,
+    )
+
+    cax = fig.add_axes(
+        [
+            ax.get_position().x1 + 0.01,
+            ax.get_position().y0,
+            0.02,
+            ax.get_position().height,
+        ]
+    )
+    diff_colors_bar = fig.colorbar(diff_colors, cax=cax)
+
+    diff_colors_bar.ax.set_title("$\Delta$H [m]")
+
+    fig.savefig(result_file(output_file), dpi=400)
+
+    return fig, ax
+
+
+plot_diffmap(
+    title="Differenz der Geländeoberflächen\n1953 - 1999",
     basemap=basemap_1953,
+    grid_z=grid_z_diff_1999,
+    dz_range=(-5, 17),
     output_file="Differenz_1953_1999.png",
+)
+
+plot_diffmap(
+    title="Höhenänderung der Geländeoberflächen\n1999 - 2004",
+    basemap=basemap_1999,
+    grid_z=grid_z_diff_2004,
+    dz_range=(-6, 6),
+    extend="both",
+    output_file="Differenz_1999_2004.png",
 )
