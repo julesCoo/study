@@ -1,15 +1,11 @@
-from matplotlib import cm
-from matplotlib import colors
-from matplotlib.colors import LinearSegmentedColormap, ListedColormap
+import matplotlib.colors
+import matplotlib.cm
+import matplotlib.path
+import matplotlib.pyplot as plt
 import numpy as np
-from pandas import DataFrame, read_csv
-from os import path
-from typing import Tuple
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-from matplotlib.pyplot import subplots, imread
-from scipy import interpolate
-from matplotlib.path import Path
+import pandas as pd
+import scipy.interpolate
+import os
 
 """
 
@@ -24,8 +20,8 @@ Data Specifications
 #       Top Left: x = 2100[m], y = -1100[m]
 #   Bottom Right: x = 1500[m], y = -200[m]
 #
-# The coordinates found in the text files are given in cartesic coordinates (x = east, y = north).
-# To avoid further confusion, we will from now on use only cartesic coordinates in this script.
+# The coordinates found in the text files are given in mathematical coordinates (x = east, y = north).
+# To avoid further confusion, we will from now on use only mathematical coordinates in this script.
 width, height = 900, 600
 x_min, x_max = -1100, -200
 y_min, y_max = 1500, 2100
@@ -38,23 +34,23 @@ Data Import
 
 # All input files are located in the "data" subdirectory.
 def data_file(name):
-    return path.join(path.dirname(__file__), "data", name)
+    return os.path.join(os.path.dirname(__file__), "data", name)
 
 
 # All output files are located in the "results" subdirectory.
 def result_file(name):
-    return path.join(path.dirname(__file__), "results", name)
+    return os.path.join(os.path.dirname(__file__), "results", name)
 
 
 # Read image files via matplotlib API
-def read_img(file: str) -> np.ndarray:
-    return imread(data_file(file))
+def read_tif(file: str) -> np.ndarray:
+    return plt.imread(data_file(file))
 
 
 # Read surface data via pandas API
-def read_surface_data(file: str) -> DataFrame:
+def read_dat(file: str) -> pd.DataFrame:
     # some cleanup was required: remove trailing space, convert to utf8
-    return read_csv(
+    return pd.read_csv(
         data_file(file),
         sep=" ",
         # First row is column headers
@@ -63,8 +59,8 @@ def read_surface_data(file: str) -> DataFrame:
 
 
 # Read polylines via pandas API
-def read_polyline(file: str) -> DataFrame:
-    return read_csv(
+def read_bln(file: str) -> pd.DataFrame:
+    return pd.read_csv(
         data_file(file),
         sep=",",
         # First row should be skipped according to specification.
@@ -75,17 +71,17 @@ def read_polyline(file: str) -> DataFrame:
     )
 
 
-ortho_img_1953 = read_img("O1953_9960_A3_1m.tif")
-ortho_img_1999 = read_img("O1999_9523_A3_1m.tif")
-ortho_img_2004 = read_img("O2004_2385c_A3_1m.tif")
+ortho_img_1953 = read_tif("O1953_9960_A3_1m.tif")
+ortho_img_1999 = read_tif("O1999_9523_A3_1m.tif")
+ortho_img_2004 = read_tif("O2004_2385c_A3_1m.tif")
 
-surface_1953 = read_surface_data("kr_53_A3_o25.dat")
-surface_1999 = read_surface_data("kr_99_A3_o25.dat")
-surface_2004 = read_surface_data("kr_9904_all.dat")
+surface_1953 = read_dat("kr_53_A3_o25.dat")
+surface_1999 = read_dat("kr_99_A3_o25.dat")
+surface_2004 = read_dat("kr_9904_all.dat")
 
-polyline_tear_edge = read_polyline("Anrisskante.bln")
-polygon_tearoff_edge = read_polyline("Abbruchkante.bln")
-polyline_region = read_polyline("diff_analyse_grd.bln")
+polyline_tear_edge = read_bln("Anrisskante.bln")
+polygon_tearoff_edge = read_bln("Abbruchkante.bln")
+polyline_region = read_bln("diff_analyse_grd.bln")
 
 """
 
@@ -106,8 +102,13 @@ grid_x, grid_y = np.meshgrid(
 grid_xy = np.vstack((grid_x.flatten(), grid_y.flatten())).T
 
 # We can then interpolate the height values of each grid point using the surface data.
-def interpolate_grid(surface: DataFrame, x_column, y_column, z_column) -> np.ndarray:
-    return interpolate.griddata(
+def interpolate_grid(
+    surface: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    z_column: str,
+) -> np.ndarray:
+    return scipy.interpolate.griddata(
         points=(surface[x_column], surface[y_column]),
         values=surface[z_column],
         xi=(grid_x, grid_y),
@@ -131,7 +132,6 @@ grid_xy_diff_2004 = interpolate_grid(surface_2004, "X1[m]", "Y1[m]", "dS_2D/T[cm
 grid_vec_u_2004 = interpolate_grid(surface_2004, "X1[m]", "Y1[m]", "dX/T[cm]")
 grid_vec_v_2004 = interpolate_grid(surface_2004, "X1[m]", "Y1[m]", "dY/T[cm]")
 
-
 """
 
 Surface Grid Visualization
@@ -151,7 +151,7 @@ z_min, z_max, z_step = 1500, 2100, 50
 
 # This creates a closed path from the polyline data, which we can use to determine if a point is inside the region of interest.
 # We then create a 2d mask array, which maps each pixel to a boolean value indicating if it is outside the region of interest.
-region_path = Path(polyline_region[["X[m]", "Y[m]"]].values)
+region_path = matplotlib.path.Path(polyline_region[["X[m]", "Y[m]"]].values)
 region_mask = np.logical_not(region_path.contains_points(grid_xy).reshape(grid_x.shape))
 
 
@@ -160,8 +160,8 @@ region_mask = np.logical_not(region_path.contains_points(grid_xy).reshape(grid_x
 # because no significant change happened in this area.
 def create_diff_colormap(min, max):
     # Use different base colormaps for positive and negative values
-    top = cm.get_cmap("autumn_r")
-    bottom = cm.get_cmap("summer")
+    top = matplotlib.cm.get_cmap("autumn_r")
+    bottom = matplotlib.cm.get_cmap("summer")
 
     # Create a list of 256 colors, which will be used as the colormap
     colors = np.ndarray((256, 4))
@@ -179,7 +179,7 @@ def create_diff_colormap(min, max):
         # Between +- 0.5 and 2 meters, we slowly fade in the color to avoid hard transitions.
         colors[i, -1] = np.interp(abs(dz), [0.5, 2], [0, 1])
 
-    cmap = ListedColormap(colors)
+    cmap = matplotlib.colors.ListedColormap(colors)
     cmap.set_over(top(255))
     cmap.set_under(bottom(0))
     return cmap
@@ -193,7 +193,7 @@ Base Map Generation
 
 
 def create_basemap(title: str, ortho_image: np.ndarray):
-    fig, ax = subplots()
+    fig, ax = plt.subplots()
 
     fig.suptitle("Hangrutschung im Blaubachgraben", fontsize=14, fontweight="bold")
     ax.set_title(title)
