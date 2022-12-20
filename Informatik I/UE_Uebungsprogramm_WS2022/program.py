@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Tuple
 import matplotlib.colors
 import matplotlib.cm
 import matplotlib.path
@@ -329,6 +329,13 @@ def create_vectormap(
     )
 
     return fig
+
+
+"""
+
+Result File Generation
+
+"""
 
 
 create_basemap(
