@@ -1,4 +1,4 @@
-Punkt_ID PCode X1[m] Y1[m] Z1[m] X2[m] Y2[m] Z2[m] dX[m] dY[m] dZ[m] dT[a] dX/T[cm] dY/T[cm] dZ/T[cm] dS_2D[m] dS_3D[m] dS_2D/T[cm] dS_3D/T[cm] Azimut[Â°] SurfAzimut[Â°] Slope[Â°] mX_1[cm] mY_1[cm] mZ_1[cm] mX_2[cm] mY_2[cm] mZ_2[cm] mP_1[cm] mP_2[cm] mS_2D[cm] mS_3D[cm] DelFlag
+Punkt_ID PCode X1[m] Y1[m] Z1[m] X2[m] Y2[m] Z2[m] dX[m] dY[m] dZ[m] dT[a] dX/T[cm] dY/T[cm] dZ/T[cm] dS_2D[m] dS_3D[m] dS_2D/T[cm] dS_3D/T[cm] Azimut[°] SurfAzimut[°] Slope[°] mX_1[cm] mY_1[cm] mZ_1[cm] mX_2[cm] mY_2[cm] mZ_2[cm] mP_1[cm] mP_2[cm] mS_2D[cm] mS_3D[cm] DelFlag
 18 0 -1053.189 2073.566 1959.111 -1052.915 2073.693 1959.251 0.274 0.127 0.14 5 5.5 2.5 2.8 0.302 0.333 6 6.7 65.1321 294.8679 24.8712 0 0 0 0 0 0 0 0 0 0 0
 20 0 -1057.841 2071.862 1957.673 -1057.598 2071.972 1957.685 0.243 0.11 0.012 5 4.9 2.2 0.2 0.267 0.267 5.3 5.3 65.6449 294.3551 2.5759 0 0 0 0 0 0 0 0 0 0 0
 22 0 -1064.286 2068.603 1957.672 -1064.003 2068.765 1957.541 0.283 0.162 -0.131 5 5.7 3.2 -2.6 0.326 0.351 6.5 7 60.2115 299.7885 -21.8869 0 0 0 0 0 0 0 0 0 0 0

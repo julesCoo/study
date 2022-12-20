@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.interpolate
-import os
+import io
 
 """
 
@@ -32,36 +32,26 @@ Data Import
 
 """
 
-# All input files are located in the "data" subdirectory.
-def data_file(name):
-    return os.path.join(os.path.dirname(__file__), "data", name)
-
-
-# All output files are located in the "results" subdirectory.
-def result_file(name):
-    return os.path.join(os.path.dirname(__file__), "results", name)
-
-
 # Read image files via matplotlib API
-def read_tif(file: str) -> np.ndarray:
-    return plt.imread(data_file(file))
+def read_tif(filename: str) -> np.ndarray:
+    return plt.imread(filename)
 
 
 # Read surface data via pandas API
-def read_dat(file: str) -> pd.DataFrame:
-    # some cleanup was required: remove trailing space, convert to utf8
-    return pd.read_csv(
-        data_file(file),
-        sep=" ",
-        # First row is column headers
-        header=0,
-    )
+def read_dat(filename: str) -> pd.DataFrame:
+    # .dat files are encoded in windows-1252 (boo!)
+    with open(filename, "r", encoding="cp1252") as f:
+        # They also contain a leading space in the header row, which confuses Pandas
+        # (as it moves all columns to the right by one, which is incorrect!)
+        # So we first have to remove that space and then pass the file contents to read_csv
+        content = f.read()[1:]
+        return pd.read_csv(io.StringIO(content), sep=" ", header=0)
 
 
 # Read polylines via pandas API
-def read_bln(file: str) -> pd.DataFrame:
+def read_bln(filename: str) -> pd.DataFrame:
     return pd.read_csv(
-        data_file(file),
+        filename,
         sep=",",
         # First row should be skipped according to specification.
         # It is unclear what data is contained there, but it certainly is not part of the polyline.
@@ -335,17 +325,17 @@ def create_vectormap(
 create_basemap(
     title="Grundkarte 1953",
     ortho_image=ortho_img_1953,
-).savefig(result_file("Grundkarte_1953.png"), dpi=400)
+).savefig("Plot1_Grundkarte_1953.png", dpi=400)
 
 create_basemap(
     title="Grundkarte 1999",
     ortho_image=ortho_img_1999,
-).savefig(result_file("Grundkarte_1999.png"), dpi=400)
+).savefig("Plot1_Grundkarte_1999.png", dpi=400)
 
 create_basemap(
     title="Grundkarte 2004",
     ortho_image=ortho_img_2004,
-).savefig(result_file("Grundkarte_2004.png"), dpi=400)
+).savefig("Plot1_Grundkarte_2004.png", dpi=400)
 
 create_diffmap(
     title="Differenz der Geländeoberflächen\n1953 - 1999",
@@ -353,7 +343,7 @@ create_diffmap(
     grid_values=grid_z_diff_1999,
     grid_levels=np.arange(-5, 17, 1),
     cmap=create_diff_colormap(-5, 17),
-).savefig(result_file("Differenz_1953_1999.png"), dpi=400)
+).savefig("Plot2_Differenz_1953_1999.png", dpi=400)
 
 create_diffmap(
     title="Höhenänderung der Geländeoberflächen\n1999 - 2004",
@@ -362,7 +352,7 @@ create_diffmap(
     grid_levels=np.arange(-6, 6, 1),
     cmap=create_diff_colormap(-6, 6),
     extend="both",
-).savefig(result_file("Differenz_1999_2004.png"), dpi=400)
+).savefig("Plot2_Differenz_1999_2004.png", dpi=400)
 
 create_vectormap(
     title="Mittlere jährliche Horizontalverschiebung\n1999 - 2004",
@@ -373,4 +363,4 @@ create_vectormap(
     grid_levels=np.arange(0, 180, 10),
     ax_label="$\Delta$xy [cm]",
     cmap="viridis",
-).savefig(result_file("Verschiebung_1999_2004.png"), dpi=400)
+).savefig("Plot3_Verschiebung_1999_2004.png", dpi=400)
