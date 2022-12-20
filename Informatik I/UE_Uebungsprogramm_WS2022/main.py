@@ -70,7 +70,7 @@ surface_1999 = read_dat("kr_99_A3_o25.dat")
 surface_2004 = read_dat("kr_9904_all.dat")
 
 polyline_tear_edge = read_bln("Anrisskante.bln")
-polygon_tearoff_edge = read_bln("Abbruchkante.bln")
+polyline_tearoff_edge = read_bln("Abbruchkante.bln")
 polyline_region = read_bln("diff_analyse_grd.bln")
 
 """
@@ -218,8 +218,8 @@ def create_basemap(title: str, ortho_image: np.ndarray):
 
     # Tear-off Edge (solid line)
     ax.plot(
-        polygon_tearoff_edge["X[m]"],
-        polygon_tearoff_edge["Y[m]"],
+        polyline_tearoff_edge["X[m]"],
+        polyline_tearoff_edge["Y[m]"],
         color="red",
         linewidth=2,
         label="Abbruchkante",
@@ -246,11 +246,11 @@ Thematic Map Generation
 """
 
 
-def create_diffmap(
+def create_colormap(
     title: str,
     ortho_image: np.ndarray,
     grid_values: np.ndarray,
-    grid_levels: np.ndarray,  # min, max, step
+    grid_levels: np.ndarray,
     cmap,
     ax_label="$\Delta$H [m]",
     extend="neither",
@@ -291,7 +291,7 @@ def create_vectormap(
     cmap,
     ax_label="H [m]",
 ):
-    fig = create_diffmap(
+    fig = create_colormap(
         title=title,
         ortho_image=ortho_image,
         grid_values=grid_values,
@@ -337,7 +337,7 @@ create_basemap(
     ortho_image=ortho_img_2004,
 ).savefig("Plot1_Grundkarte_2004.png", dpi=400)
 
-create_diffmap(
+create_colormap(
     title="Differenz der Geländeoberflächen\n1953 - 1999",
     ortho_image=ortho_img_1953,
     grid_values=grid_z_diff_1999,
@@ -345,7 +345,7 @@ create_diffmap(
     cmap=create_diff_colormap(-5, 17),
 ).savefig("Plot2_Differenz_1953_1999.png", dpi=400)
 
-create_diffmap(
+create_colormap(
     title="Höhenänderung der Geländeoberflächen\n1999 - 2004",
     ortho_image=ortho_img_1999,
     grid_values=grid_z_diff_2004,
