@@ -1,3 +1,4 @@
+from typing import Optional, Tuple
 import matplotlib.colors
 import matplotlib.cm
 import matplotlib.path
@@ -108,6 +109,7 @@ def interpolate_grid(
 
 grid_z_1953 = interpolate_grid(surface_1953, "X[m]", "Y[m]", "Z[m]")
 grid_z_1999 = interpolate_grid(surface_1999, "X[m]", "Y[m]", "Z[m]")
+grid_z_2004 = interpolate_grid(surface_2004, "X1[m]", "Y1[m]", "Z1[m]")
 
 # Calculate the height difference between the measurements in 1953 and 1999.
 # This will be used for visualization later.
@@ -182,7 +184,7 @@ Base Map Generation
 """
 
 
-def create_basemap(title: str, ortho_image: np.ndarray):
+def create_basemap(title: str, ortho_image: np.ndarray, grid_z: np.ndarray):
     fig, ax = plt.subplots()
 
     fig.suptitle("Hangrutschung im Blaubachgraben", fontsize=14, fontweight="bold")
@@ -199,7 +201,7 @@ def create_basemap(title: str, ortho_image: np.ndarray):
     height_contours = ax.contour(
         grid_x,
         grid_y,
-        grid_z_1999,
+        grid_z,
         levels=np.arange(z_min, z_max, z_step),
         colors="black",
         linewidths=0.75,
@@ -249,13 +251,18 @@ Thematic Map Generation
 def create_colormap(
     title: str,
     ortho_image: np.ndarray,
+    grid_z: np.ndarray,
     grid_values: np.ndarray,
     grid_levels: np.ndarray,
     cmap,
     ax_label="$\Delta$H [m]",
     extend="neither",
 ):
-    fig = create_basemap(title, ortho_image)
+    fig = create_basemap(
+        title=title,
+        ortho_image=ortho_image,
+        grid_z=grid_z,
+    )
     ax = fig.axes[0]
 
     diff_colors = ax.contourf(
@@ -284,16 +291,17 @@ def create_colormap(
 def create_vectormap(
     title: str,
     ortho_image: np.ndarray,
+    grid_z: np.ndarray,
     grid_values: np.ndarray,
     grid_levels: np.ndarray,  # min, max, step
-    grid_vec_u: np.ndarray,
-    grid_vec_v: np.ndarray,
+    grid_vec: Tuple[np.ndarray, np.ndarray],
     cmap,
     ax_label="H [m]",
 ):
     fig = create_colormap(
         title=title,
         ortho_image=ortho_image,
+        grid_z=grid_z,
         grid_values=grid_values,
         grid_levels=grid_levels,
         cmap=cmap,
@@ -302,6 +310,7 @@ def create_vectormap(
     )
     ax = fig.axes[0]
 
+    grid_vec_u, grid_vec_v = grid_vec
     grid_vec_u = np.ma.masked_array(grid_vec_u, mask=region_mask)
     grid_vec_v = np.ma.masked_array(grid_vec_v, mask=region_mask)
 
@@ -325,21 +334,25 @@ def create_vectormap(
 create_basemap(
     title="Grundkarte 1953",
     ortho_image=ortho_img_1953,
+    grid_z=grid_z_1953,
 ).savefig("Plot1_Grundkarte_1953.png", dpi=400)
 
 create_basemap(
     title="Grundkarte 1999",
     ortho_image=ortho_img_1999,
+    grid_z=grid_z_1999,
 ).savefig("Plot1_Grundkarte_1999.png", dpi=400)
 
 create_basemap(
     title="Grundkarte 2004",
     ortho_image=ortho_img_2004,
+    grid_z=grid_z_2004,
 ).savefig("Plot1_Grundkarte_2004.png", dpi=400)
 
 create_colormap(
     title="Differenz der Geländeoberflächen\n1953 - 1999",
     ortho_image=ortho_img_1953,
+    grid_z=grid_z_1999,
     grid_values=grid_z_diff_1999,
     grid_levels=np.arange(-5, 17, 1),
     cmap=create_diff_colormap(-5, 17),
@@ -348,6 +361,7 @@ create_colormap(
 create_colormap(
     title="Höhenänderung der Geländeoberflächen\n1999 - 2004",
     ortho_image=ortho_img_1999,
+    grid_z=grid_z_2004,
     grid_values=grid_z_diff_2004,
     grid_levels=np.arange(-6, 6, 1),
     cmap=create_diff_colormap(-6, 6),
@@ -357,8 +371,8 @@ create_colormap(
 create_vectormap(
     title="Mittlere jährliche Horizontalverschiebung\n1999 - 2004",
     ortho_image=ortho_img_1999,
-    grid_vec_u=grid_vec_u_2004,
-    grid_vec_v=grid_vec_v_2004,
+    grid_z=grid_z_2004,
+    grid_vec=(grid_vec_u_2004, grid_vec_v_2004),
     grid_values=grid_xy_diff_2004,
     grid_levels=np.arange(0, 180, 10),
     ax_label="$\Delta$xy [cm]",
