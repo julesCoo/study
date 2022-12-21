@@ -1,8 +1,7 @@
 from __future__ import annotations
 from math import asin, atan2, cos, radians, sin, pi, sqrt, atan
-
-from libgeo import fmt_deg_str
 from lib3d import Vec3
+from libgeo import fmt_deg_str
 
 # A spherical triangle is created from the intersection of 3 great circles
 # on a unit sphere. All angles and sides are given in radians.
@@ -13,6 +12,7 @@ class SphereTriangle:
     a: float
     b: float
     c: float
+    excess: float
 
     def __init__(
         self,
@@ -29,6 +29,7 @@ class SphereTriangle:
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
+        self.excess = pi - alpha - beta - gamma
 
     def __repr__(self) -> str:
         return f"SphereTriangle({self.a}, {self.b}, {self.c}, {self.alpha}, {self.beta}, {self.gamma})"
@@ -116,21 +117,13 @@ class SphereTriangle:
     # Half-side formula
     def _www(alpha: float, beta: float, gamma: float):
         rho = (alpha + beta + gamma) / 2
-        cot_a_half = sqrt(
-            cos(rho - beta) * cos(rho - gamma) / (-cos(rho) * cos(rho - alpha))
-        )
-        cot_b_half = sqrt(
-            cos(rho - alpha) * cos(rho - gamma) / (-cos(rho) * cos(rho - beta))
-        )
-        cot_c_half = sqrt(
-            cos(rho - alpha) * cos(rho - beta) / (-cos(rho) * cos(rho - gamma))
-        )
-        a_half = atan(cot_a_half)
-        b_half = atan(cot_b_half)
-        c_half = atan(cot_c_half)
-        a = 2 * a_half
-        b = 2 * b_half
-        c = 2 * c_half
+        cr = cos(rho)
+        cra = cos(rho - alpha)
+        crb = cos(rho - beta)
+        crg = cos(rho - gamma)
+        a = 2 * atan(1 / sqrt(crb * crg / (-cr * cra)))
+        b = 2 * atan(1 / sqrt(cra * crg / (-cr * crb)))
+        c = 2 * atan(1 / sqrt(cra * crb / (-cr * crg)))
         return a, b, c
 
     # Half-angle formula
