@@ -29,7 +29,7 @@ class SphereTriangle:
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
-        self.excess = pi - alpha - beta - gamma
+        self.excess = (alpha + beta + gamma) - pi
 
     def __repr__(self) -> str:
         return f"SphereTriangle({self.a}, {self.b}, {self.c}, {self.alpha}, {self.beta}, {self.gamma})"
@@ -190,55 +190,6 @@ class SphereCoords:
         z = r * sin(lat)
         return Vec3(x, y, z)
 
-    def ha1(self, s12: float, a12: float):
-        phi1, lam1, r = self
-
-        if a12 < radians(180):
-            triangle = SphereTriangle.sws(
-                a=radians(90) - phi1,
-                b=s12,
-                gamma=a12,
-            )
-            p2 = SphereCoords.from_phi_lamda(
-                phi=radians(90) - triangle.c,
-                lam=lam1 + triangle.beta,
-                r=r,
-            )
-            a21 = radians(360) - triangle.alpha
-
-        else:
-            triangle = SphereTriangle.sws(
-                a=s12,
-                b=radians(90) - phi1,
-                gamma=radians(360) - a12,
-            )
-            p2 = SphereCoords.from_phi_lamda(
-                phi=radians(90) - triangle.c,
-                lam=lam1 - triangle.alpha,
-                r=r,
-            )
-            a21 = triangle.beta
-
-        return p2, a21
-
-    def ha2(self, other: SphereCoords):
-        phi1, lam1, r1 = self
-        phi2, lam2, r2 = other
-        assert r1 == r2
-
-        triangle = SphereTriangle.sws(
-            a=pi / 2 - phi1,
-            b=pi / 2 - phi2,
-            gamma=lam2 - lam1,
-        )
-        dist = triangle.c * r1
-        angle = triangle.beta
-
-        if lam1 > lam2:
-            angle = radians(360) - angle
-
-        return dist, angle
-
     @classmethod
     def from_phi_lamda(cls, phi: float, lam: float, r: float = 1):
         return cls(phi, lam, r)
@@ -256,3 +207,54 @@ class SphereCoords:
         lon = atan2(y, x)
 
         return cls(lat, lon, r)
+
+
+def ha1(p1: SphereCoords, s12: float, a12: float):
+    phi1, lam1, r = p1
+
+    if a12 < radians(180):
+        triangle = SphereTriangle.sws(
+            a=radians(90) - phi1,
+            b=s12,
+            gamma=a12,
+        )
+        p2 = SphereCoords.from_phi_lamda(
+            phi=radians(90) - triangle.c,
+            lam=lam1 + triangle.beta,
+            r=r,
+        )
+        a21 = radians(360) - triangle.alpha
+
+    else:
+        triangle = SphereTriangle.sws(
+            a=s12,
+            b=radians(90) - phi1,
+            gamma=radians(360) - a12,
+        )
+        p2 = SphereCoords.from_phi_lamda(
+            phi=radians(90) - triangle.c,
+            lam=lam1 - triangle.alpha,
+            r=r,
+        )
+        a21 = triangle.beta
+
+    return p2, a21
+
+
+def ha2(p1: SphereCoords, p2: SphereCoords):
+    phi1, lam1, r1 = p1
+    phi2, lam2, r2 = p2
+    assert r1 == r2
+
+    triangle = SphereTriangle.sws(
+        a=pi / 2 - phi1,
+        b=pi / 2 - phi2,
+        gamma=lam2 - lam1,
+    )
+    dist = triangle.c * r1
+    angle = triangle.beta
+
+    if lam1 > lam2:
+        angle = radians(360) - angle
+
+    return dist, angle
