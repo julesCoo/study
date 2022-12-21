@@ -1,6 +1,7 @@
 from __future__ import annotations
-from math import asin, atan2, cos, degrees, radians, sin, pi, tau, sqrt, atan
-from libgeo import Angle
+from math import asin, atan2, cos, radians, sin, pi, sqrt, atan
+
+from libgeo import fmt_deg_str
 from lib3d import Vec3
 
 # A spherical triangle is created from the intersection of 3 great circles
@@ -172,8 +173,8 @@ class SphereCoords:
         self.r = r
 
     def __repr__(self) -> str:
-        phi = Angle.from_rad(self.lat).to_deg_str()
-        lam = Angle.from_rad(self.lon).to_deg_str()
+        phi = fmt_deg_str(self.lat)
+        lam = fmt_deg_str(self.lon)
 
         if self.r == 1:
             return f"(ϕ: {phi}, λ: {lam})"

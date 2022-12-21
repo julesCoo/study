@@ -21,6 +21,11 @@ P2_lon = from_gon(-118, 56)
 P3_lat = from_gon(40)
 P3_lon = from_gon(-83)
 
+
+print(f"{P1_lat:.5f}, {P1_lon:.5f}")
+print(f"{P2_lat:.5f}, {P2_lon:.5f}")
+print(f"{P3_lat:.5f}, {P3_lon:.5f}")
+
 # Displacements of the original positions have been measured for the first two stations, given as delta latitude/longitude.
 P1_lat_delta = from_gon(0, 0, -0.02033)
 P1_lon_delta = from_gon(0, 0, 0.01034)
