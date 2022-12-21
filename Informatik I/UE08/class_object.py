@@ -95,13 +95,17 @@ class AlleStudierende:
     student: list[Student] = []
 
     def NeuerStudent(self, matrNr, vorname, nachname, gebDatum, telNr):
+        # Erst wird ein neuer Student erzeugt
         student = Student()
-        student.Datenuebergeben(matrNr, vorname, nachname, gebDatum, telNr)
 
-        # Aufpassen, dass keine uninitialisierten Objekte in unserer Liste landen.
-        # Aus diesem Grund wäre ein Exception besser als eine Fehlermeldung via print().
-        if student.matrNr != -1:
-            self.student.append(student)
+        # Dann der Liste hinzugefügt
+        self.student.append(student)
+
+        # Und anschließend wird das Objekt initialisiert.
+        # Achtung: Das ist eigentlich eine ganz schlechte Idee!
+        # Wenn ein Fehler bei der Initialisierung passiert, haben wir ein ungültiges Objekt in unserer Liste.
+        # Aber laut Aufgabenstellung ist diese Reihenfolge der Operationen gefordert.
+        student.Datenuebergeben(matrNr, vorname, nachname, gebDatum, telNr)
 
     def AlleStudentendatenAusgeben(self):
         for student in self.student:
@@ -115,6 +119,10 @@ class AlleStudierende:
                 return
 
         print("Student nicht gefunden!")
+
+
+alleStudierende = AlleStudierende()
+alleStudierende.NeuerStudent(AlexanderArzberger)
 
 
 StudierendenRegister = AlleStudierende()
