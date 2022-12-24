@@ -45,10 +45,9 @@ def fmt_deg(radians: float, precision: int = 3) -> str:
 # Converts an angle (given in radians) to a string.
 # Result is formatted as dd°mm'ss".
 def fmt_deg_str(radians: float, precision: int = 3) -> str:
-    deg = radians / tau * 360
-    is_negative = deg < 0
+    is_negative = radians < 0
 
-    rest = abs(deg)
+    rest = abs(radians / tau * 360)
 
     dd = int(rest)
     rest -= dd
@@ -66,10 +65,11 @@ def fmt_deg_str(radians: float, precision: int = 3) -> str:
             mm = 0
             dd += 1
 
+    sgn = ""
     if is_negative:
-        dd *= -1
+        sgn = "-"
 
-    return f"{dd:02d}°{mm:02d}'{ss:02f}\""
+    return f"{sgn}{dd:02d}°{mm:02d}'{ss:02.{precision}f}\""
 
 
 # Parses a string formatted as dd°mm'ss" and returns the corresponding angle in radians.

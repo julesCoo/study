@@ -40,6 +40,9 @@ class Vec3:
     def __truediv__(self, scale: float) -> Vec3:
         return Vec3(self.x / scale, self.y / scale, self.z / scale)
 
+    def __neg__(self) -> Vec3:
+        return Vec3(-self.x, -self.y, -self.z)
+
     def dot(self, other: Vec3) -> float:
         return self.x * other.x + self.y * other.y + self.z * other.z
 
@@ -105,9 +108,9 @@ class Mat3:
 
     def __repr__(self) -> str:
         return (
-            f"|{self.xx:7.4f}, {self.xy:7.4f}, {self.xz:7.4f}|\n"
-            + f"|{self.yx:7.4f}, {self.yy:7.4f}, {self.yz:7.4f}|\n"
-            + f"|{self.zx:7.4f}, {self.zy:7.4f}, {self.zz:7.4f}|"
+            f"|{self.xx:7.5f}, {self.xy:7.5f}, {self.xz:7.5f}|\n"
+            + f"|{self.yx:7.5f}, {self.yy:7.5f}, {self.yz:7.5f}|\n"
+            + f"|{self.zx:7.5f}, {self.zy:7.5f}, {self.zz:7.5f}|"
         )
 
     def __eq__(self, other: Mat3) -> bool:

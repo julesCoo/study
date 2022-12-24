@@ -14,8 +14,11 @@ a23 = from_deg(120, 46, 21.76)
 P1 = SphereCoords(phi1, lam1)
 P2 = SphereCoords(phi2, lam2)
 
+
 T1 = SphereTriangle.sws(
+    # Meridian going through P2
     a=phi2 - phi1,
+    # Circle of latitude going through P1
     b=(lam2 - lam1) * cos(phi1),
     gamma=radians(90),
 )
