@@ -133,8 +133,21 @@ Output
 
 """
 
+print(f"db1: {1e8*P1_lat_delta:.5f}")
+print(f"dl1: {1e8*P1_lon_delta:.5f}")
+
+print(f"db1': {1e8*P1_lat_delta_:.5f}")
+print(f"dl1': {1e8*P1_lon_delta_:.5f}")
+
+print(f"db2: {1e8*P2_lat_delta:.5f}")
+print(f"dl2: {1e8*P2_lon_delta:.5f}")
+
+print(f"db2': {1e8*P2_lat_delta_:.5f}")
+print(f"dl2': {1e8*P2_lon_delta_:.5f}")
+
+
 # print(f"rotational axis: {rotation_axis}")
 # print(f"angle of rotation: {fmt_deg_str(angle)}")
 
-print(f"db (Columbus, OH): {fmt_deg_str(P3_lat_delta, precision=5)}")
-print(f"dl (Columbus, OH): {fmt_deg_str(P3_lon_delta, precision=5)}")
+# print(f"db (Columbus, OH): {fmt_deg_str(P3_lat_delta, precision=5)}")
+# print(f"dl (Columbus, OH): {fmt_deg_str(P3_lon_delta, precision=5)}")
