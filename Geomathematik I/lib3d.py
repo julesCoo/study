@@ -14,7 +14,12 @@ class Vec3:
         self.z = z
 
     def __repr__(self) -> str:
-        return f"({self.x:.3f}, {self.y:.3f}, {self.z:.3f})"
+        return self.fmt()
+
+    def fmt(self, precision: int = 3) -> str:
+        return (
+            f"({self.x:.{precision}f}, {self.y:.{precision}f}, {self.z:.{precision}f})"
+        )
 
     def __getitem__(self, index: int) -> float:
         if index == 0:
@@ -33,6 +38,9 @@ class Vec3:
 
     def __mul__(self, scale: float) -> Vec3:
         return Vec3(self.x * scale, self.y * scale, self.z * scale)
+
+    def __rmul__(self, scale: float) -> Vec3:
+        return self * scale
 
     def __rmul__(self, scale: float) -> Vec3:
         return self * scale
@@ -107,10 +115,15 @@ class Mat3:
         self.zx, self.zy, self.zz = z
 
     def __repr__(self) -> str:
+        return self.fmt()
+
+    def fmt(self, precision=3, indent=0) -> str:
+        sp = " " * indent
+        fmt = f"{precision+4}.{precision}f"
         return (
-            f"|{self.xx:7.5f}, {self.xy:7.5f}, {self.xz:7.5f}|\n"
-            + f"|{self.yx:7.5f}, {self.yy:7.5f}, {self.yz:7.5f}|\n"
-            + f"|{self.zx:7.5f}, {self.zy:7.5f}, {self.zz:7.5f}|"
+            f"{sp}|{self.xx:{fmt}}, {self.xy:{fmt}}, {self.xz:{fmt}}|\n"
+            + f"{sp}|{self.yx:{fmt}}, {self.yy:{fmt}}, {self.yz:{fmt}}|\n"
+            + f"{sp}|{self.zx:{fmt}}, {self.zy:{fmt}}, {self.zz:{fmt}}|"
         )
 
     def __eq__(self, other: Mat3) -> bool:

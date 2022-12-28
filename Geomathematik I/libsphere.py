@@ -166,8 +166,11 @@ class SphereCoords:
         self.r = r
 
     def __repr__(self) -> str:
-        phi = fmt_deg_str(self.lat)
-        lam = fmt_deg_str(self.lon)
+        return self.fmt()
+
+    def fmt(self, precision=3):
+        phi = fmt_deg_str(self.lat, precision)
+        lam = fmt_deg_str(self.lon, precision)
 
         if self.r == 1:
             return f"(ϕ: {phi}, λ: {lam})"
