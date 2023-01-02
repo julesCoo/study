@@ -1,77 +1,37 @@
-from libsphere import SphereCoords
+from libsphere import SphereCoords, bgs, ha1, ha2
 from libgeo import from_deg
 
 earth_radius = 6371221  # m
+travel_speed = 20 * 1852  # m/h (20 knots)
 
+# The ship starts from here
+P1 = SphereCoords(
+    phi=from_deg(26, 12, 43),
+    lam=from_deg(-79, 30, 19),
+)
 
-# A ship moves from Miami (P1) roughly northeast.
-P1 = SphereCoords(from_deg(26, 12, 43), from_deg(-79, 30, 19), earth_radius)
+# This is a reference position
+P2 = SphereCoords(
+    phi=from_deg(25, 50, 21),
+    lam=from_deg(-73, 42, 30),
+)
 
-# It moves for 10 hours at a speed of 20 knots.
-distance_traveled = 20 * 1852 * 10  # m
+# After 10 hours, the ship traveled some distance s13 and is now at P3.
+# The distance is downscaled to be on a unit sphere.
+s13 = 10 * travel_speed / earth_radius
 
-# There is a second ship at P2, which now has a given distance d to the first ship.
-P2 = SphereCoords(from_deg(25, 50, 21), from_deg(-73, 42, 30), earth_radius)
-d = 439844  # m
+# At P3, the distance to the reference position is measured as 439844 m.
+# This distance is also downscaled to be on a unit sphere.
+s23 = 439844 / earth_radius
 
-# The first ship continues on its course for another 10 hours.
-# Where is it?
+# Given this information, we can calculate the position of the ship at P3.
+P3 = bgs(P1, P2, s13, s23)
 
-import numpy as np
-import matplotlib.pyplot as plt
+# This also gives us the movement direction of the ship, as azimuth a13.
+s13_, a13 = ha2(P1, P3)
 
+# If the ship moves for another 10 hours, it will travel the double distance at the same azimuth,
+# finally reaching P4.
+P4, _ = ha1(P1, 2 * s13, a13)
 
-def plot_earth():
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection="3d")
-
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel("z")
-
-    ax.set_xlim(-earth_radius, earth_radius)
-    ax.set_ylim(-earth_radius, earth_radius)
-    ax.set_zlim(-earth_radius, earth_radius)
-    ax.set_aspect("equal")
-
-    phi_min, phi_max, phi_steps = from_deg(-90), from_deg(+90), 45
-    lam_min, lam_max, lam_steps = from_deg(-180), from_deg(+180), 90
-
-    phi, lam = np.meshgrid(
-        np.linspace(phi_min, phi_max, phi_steps),
-        np.linspace(lam_min, lam_max, lam_steps),
-    )
-
-    x = earth_radius * np.cos(phi) * np.cos(lam)
-    y = earth_radius * np.cos(phi) * np.sin(lam)
-    z = earth_radius * np.sin(phi)
-    ax.plot_wireframe(x, y, z, color="black", alpha=0.1)
-
-    # draw equator
-    phi = 0
-    lam = np.linspace(lam_min, lam_max, lam_steps)
-    x = earth_radius * np.cos(phi) * np.cos(lam)
-    y = earth_radius * np.cos(phi) * np.sin(lam)
-    z = earth_radius * np.sin(phi)
-    ax.plot(x, y, z, color="black", alpha=0.5)
-
-    # draw prime meridian
-    phi = np.linspace(phi_min, phi_max, phi_steps)
-    lam = 0
-    x = earth_radius * np.cos(phi) * np.cos(lam)
-    y = earth_radius * np.cos(phi) * np.sin(lam)
-    z = earth_radius * np.sin(phi)
-    ax.plot(x, y, z, color="black", alpha=0.5)
-
-    return ax
-
-
-earth = plot_earth()
-
-x1, y1, z1 = P1.to_vec3()
-x2, y2, z2 = P2.to_vec3()
-
-earth.plot(x1, y1, z1, "o", color="red")
-earth.plot(x2, y2, z2, "o", color="blue")
-
-plt.show()
+print(P4)

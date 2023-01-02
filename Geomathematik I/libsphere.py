@@ -12,7 +12,6 @@ class SphereTriangle:
     a: float
     b: float
     c: float
-    excess: float
 
     def __init__(
         self,
@@ -29,10 +28,22 @@ class SphereTriangle:
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
-        self.excess = (alpha + beta + gamma) - pi
 
     def __repr__(self) -> str:
         return f"SphereTriangle({self.a}, {self.b}, {self.c}, {self.alpha}, {self.beta}, {self.gamma})"
+
+    def excess(self) -> float:
+        return self.alpha + self.beta + self.gamma - pi
+
+    def area(self, radius=1) -> float:
+        return self.excess() * radius**2
+
+    @classmethod
+    def ppp(cls, p1: SphereCoords, p2: SphereCoords, p3: SphereCoords):
+        s12, _ = ha2(p1, p2)
+        s23, _ = ha2(p2, p3)
+        s31, _ = ha2(p3, p1)
+        return cls.sss(s12, s23, s31)
 
     @classmethod
     def sws(cls, a: float, b: float, gamma: float) -> SphereTriangle:
@@ -156,21 +167,21 @@ class SphereTriangle:
 # Holds spherical coordinates as latitude and longitude.
 # Can convert to and from Vec3.
 class SphereCoords:
-    lat: float  # phi
-    lon: float  # lambda
+    phi: float  # aka latitude
+    lam: float  # aka longitude
     r: float  # radius
 
-    def __init__(self, lat: float, lon: float, r: float = 1):
-        self.lat = lat
-        self.lon = lon
+    def __init__(self, phi: float, lam: float, r: float = 1):
+        self.phi = phi
+        self.lam = lam
         self.r = r
 
     def __repr__(self) -> str:
         return self.fmt()
 
     def fmt(self, precision=3):
-        phi = fmt_deg_str(self.lat, precision)
-        lam = fmt_deg_str(self.lon, precision)
+        phi = fmt_deg_str(self.phi, precision)
+        lam = fmt_deg_str(self.lam, precision)
 
         if self.r == 1:
             return f"(ϕ: {phi}, λ: {lam})"
@@ -179,23 +190,19 @@ class SphereCoords:
 
     def __getitem__(self, index: int) -> float:
         if index == 0:
-            return self.lat
+            return self.phi
         if index == 1:
-            return self.lon
+            return self.lam
         if index == 2:
             return self.r
         raise IndexError("index out of range")
 
     def to_vec3(self):
-        lat, lon, r = self
-        x = r * cos(lat) * cos(lon)
-        y = r * cos(lat) * sin(lon)
-        z = r * sin(lat)
+        phi, lam, r = self
+        x = r * cos(phi) * cos(lam)
+        y = r * cos(phi) * sin(lam)
+        z = r * sin(phi)
         return Vec3(x, y, z)
-
-    @classmethod
-    def from_phi_lamda(cls, phi: float, lam: float, r: float = 1):
-        return cls(phi, lam, r)
 
     @classmethod
     def from_vec3(cls, p: Vec3):
@@ -206,10 +213,10 @@ class SphereCoords:
         #   latitude = acos(x / cos(longitude))
         #   latitude = acos(y / sin(longitude))
         # But since latitude should always be in the range [-pi/2, pi/2], using asin is fine.
-        lat = asin(z)
-        lon = atan2(y, x)
+        phi = asin(z)
+        lam = atan2(y, x)
 
-        return cls(lat, lon, r)
+        return cls(phi, lam, r)
 
 
 def ha1(p1: SphereCoords, s12: float, a12: float):
@@ -218,10 +225,10 @@ def ha1(p1: SphereCoords, s12: float, a12: float):
     if a12 < radians(180):
         triangle = SphereTriangle.sws(
             a=radians(90) - phi1,
-            b=s12,
+            b=s12 / r,
             gamma=a12,
         )
-        p2 = SphereCoords.from_phi_lamda(
+        p2 = SphereCoords(
             phi=radians(90) - triangle.c,
             lam=lam1 + triangle.beta,
             r=r,
@@ -230,11 +237,11 @@ def ha1(p1: SphereCoords, s12: float, a12: float):
 
     else:
         triangle = SphereTriangle.sws(
-            a=s12,
+            a=s12 / r,
             b=radians(90) - phi1,
             gamma=radians(360) - a12,
         )
-        p2 = SphereCoords.from_phi_lamda(
+        p2 = SphereCoords(
             phi=radians(90) - triangle.c,
             lam=lam1 - triangle.alpha,
             r=r,
@@ -249,15 +256,75 @@ def ha2(p1: SphereCoords, p2: SphereCoords):
     phi2, lam2, r2 = p2
     assert r1 == r2
 
+    # Pole Triangle
     triangle = SphereTriangle.sws(
         a=pi / 2 - phi1,
         b=pi / 2 - phi2,
         gamma=lam2 - lam1,
     )
-    dist = triangle.c * r1
-    angle = triangle.beta
+    distance = triangle.c * r1
+    azimuth = triangle.beta
 
     if lam1 > lam2:
-        angle = radians(360) - angle
+        azimuth = radians(360) - azimuth
 
-    return dist, angle
+    return distance, azimuth
+
+
+# Given two positions and their azimuths towards a third position, calculate the third position.
+def vws(
+    P1: SphereCoords,
+    P2: SphereCoords,
+    a13: float,
+    a23: float,
+):
+    # Create a triangle containing P1, P2, P3.
+    # At P1 is alpha, at P2 is beta. c is the distance between P1 and P2.
+
+    # We already know P1 and P2, so we can calculate their distance and their azimuth towards each other.
+    s12, a12 = ha2(P1, P2)
+    s21, a21 = ha2(P2, P1)
+
+    if a12 > a13:
+        # P3 is "over" P1 and P2.
+        T = SphereTriangle.wsw(
+            alpha=a12 - a13,
+            beta=a23 - a21,
+            c=s12,
+        )
+    else:
+        # P3 is "under" P1 and P2.
+        T = SphereTriangle.wsw(
+            alpha=a13 - a12,
+            beta=a21 - a23,
+            c=s12,
+        )
+    s13 = T.b
+    P3, _ = ha1(P1, s13, a13)
+    # or:
+    # s23 = T.a
+    # P3 = ha1(P2, s23, a23)
+    return P3
+
+
+# Given two positions and their distance towards a third position, calculate the third position.
+def bgs(
+    P1: SphereCoords,
+    P2: SphereCoords,
+    s13: float,
+    s23: float,
+):
+    s12, a12 = ha2(P1, P2)
+    s21, a21 = ha2(P2, P1)
+
+    T = SphereTriangle.sss(a=s12, b=s13, c=s23)
+
+    # Assuming P3 is "over" P1 and P2.
+    a13 = a12 - T.gamma
+    P3, _ = ha1(P1, s13, a13)
+
+    # Alternative:
+    # a23 = a21 + T.beta
+    # P3, _ = ha1(P2, s23, a23)
+
+    return P3
