@@ -31,33 +31,19 @@ Print Statistics
 
 # Print statistics for the numeric columns
 xyz = point_data[["X[m]", "Y[m]", "H[m]"]]
+stats = pd.DataFrame(
+    {
+        "Mittelwert": xyz.mean(),
+        "Standardabweichung": xyz.std(),
+        # Task description asks for mode, but that doesn't make much sense
+        # for a continuous distribution of values, since each value only
+        # occurs exactly once. So we use the median instead.
+        "Median": xyz.median(),
+    }
+)
 
-print(">> Mittelwerte:")
-print(xyz.mean())
-
-# Task description asks for mode, but that doesn't make much sense
-# for a continuous distribution of values, since each value only
-# occurs exactly once. So we use the median instead.
-# print("")
-# print(">> Modus:")
-# print(stats.mode())
-
-# So instead we will print the median of the distribution
-print("")
-print(">> Median:")
-print(xyz.median())
-
-print("")
-print(">> Standardabweichung:")
-print(xyz.std())
-
-# Task doesn't ask for it, but I want to make sure that all
-# points share the same integer value within a column.
-# Otherwise subtracting the integer value could produce
-# misleading results.
-print("")
-print(">> Ganzzahlige Anteile:")
-print(xyz.apply(lambda x: x // 1).mode())
+print(">> Statistiken:")
+print(stats)
 
 """
 Plot Coordinates over time
