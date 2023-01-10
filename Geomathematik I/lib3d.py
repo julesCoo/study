@@ -281,13 +281,37 @@ class Mat3:
     @classmethod
     def projection(cls, axis: Vec3) -> Mat3:
         x, y, z = axis.normalized()
-
-        P = Mat3(
+        return Mat3(
             (x * x, x * y, x * z),
             (y * x, y * y, y * z),
             (z * x, z * y, z * z),
         )
-        return P
+
+    @classmethod
+    def axiator(cls, axis: Vec3) -> Mat3:
+        x, y, z = axis.normalized()
+        return Mat3(
+            (0, -z, y),
+            (z, 0, -x),
+            (-y, x, 0),
+        )
+
+    @classmethod
+    def from_axis_and_angle(
+        cls,
+        axis: Vec3,
+        angle: float,
+        infinitesimal: bool = False,
+    ) -> Mat3:
+        if infinitesimal:
+            I = Mat3.identity()
+            A = Mat3.axiator(axis) * angle
+            return I + A
+        else:
+            I = Mat3.identity()
+            P = Mat3.projection(axis)
+            A = Mat3.axiator(axis)
+            return P + (I - P) * cos(angle) + A * sin(angle)
 
     @classmethod
     def from_euler_angles(
@@ -321,46 +345,6 @@ class Mat3:
                     cos(theta),
                 ),
             )
-
-    @classmethod
-    def from_vector_as_projection(cls, axis: Vec3) -> Mat3:
-        x, y, z = axis.normalized()
-        return Mat3(
-            (x * x, x * y, x * z),
-            (y * x, y * y, y * z),
-            (z * x, z * y, z * z),
-        )
-
-    @classmethod
-    def from_axis_and_angle(
-        cls,
-        axis: Vec3,
-        angle: float,
-        infinitesimal: bool = False,
-    ) -> Mat3:
-        I = Mat3.identity()
-
-        if infinitesimal:
-            x, y, z = axis.normalized() * angle
-            A = Mat3(
-                (0, -z, y),
-                (z, 0, -x),
-                (-y, x, 0),
-            )
-            return I + A
-
-        else:
-            x, y, z = axis.normalized()
-
-            P = Mat3.projection(axis)
-
-            A = Mat3(
-                (0, -z, y),
-                (z, 0, -x),
-                (-y, x, 0),
-            )
-
-            return P + (I - P) * cos(angle) + A * sin(angle)
 
 
 # Vorwärtsschnitt

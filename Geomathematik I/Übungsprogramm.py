@@ -104,7 +104,7 @@ w_5 = w_a * 5
 w_10 = w_a * 10
 
 # Check how far Columbus would move in 10 years
-R10 = Mat3.from_axis_and_angle(axis, w_10, infinitesimal=True)
+R10 = Mat3.from_axis_and_angle(axis, w_10, infinitesimal=False)
 r3 = R10 * p3
 
 # This gives us the 3D coordinates of Columbus in 10 years.
@@ -120,9 +120,11 @@ dl3 = l3_ - l3
 Backward Rotation (for verification)
 """
 
-R5 = Mat3.from_axis_and_angle(axis, w_5, infinitesimal=True)
-r1_ = R5 * p1
-r2_ = R5 * p2
+R5_ = Mat3.from_axis_and_angle(axis, w_5, infinitesimal=True)
+R10_ = Mat3.from_axis_and_angle(axis, w_10, infinitesimal=True)
+
+r1_ = R5_ * p1
+r2_ = R5_ * p2
 assert r1.equals(r1_)
 assert r2.equals(r2_)
 
@@ -173,7 +175,7 @@ print(f"   w5: {(w_5*1e8):.5f} * 1e-8")
 print(f"  w10: {(w_10*1e8):.5f} * 1e-8")
 print("")
 print("Rotational matrix (10 years, * 1e-8):")
-print(((R10 - Mat3.identity()) * 1e8).fmt(5, 2))
+print((R10 * 1e8).fmt(5, 2))
 print("")
 print("Columbus in 10 years:")
 print(f"  dr3: {((r3 - p3)*1e8).fmt(5)} * 1e-8")
@@ -188,10 +190,12 @@ print(f"  w5: {fmt_deg_str(w_5,precision=5)}")
 print(f" w10: {fmt_deg_str(w_10,precision=5)}")
 print("")
 print("Verification: Rotational matrix (5 years, * 1e-8):")
-print(((R5 - Mat3.identity()) * 1e8).fmt(5, 2))
+print((R5_ * 1e8).fmt(5, 2))
+print("Verification: Rotational matrix (10 years, * 1e-8):")
+print((R10_ * 1e8).fmt(5, 2))
 print()
 print("Verification: Displacement in DMS:")
-print(f"     db1: {fmt_deg_str(db1,precision=5)}")
-print(f"     dl1: {fmt_deg_str(dl1,precision=5)}")
-print(f"     db2: {fmt_deg_str(db2,precision=5)}")
-print(f"     dl2: {fmt_deg_str(dl2,precision=5)}")
+print(f"     db1: {fmt_deg_str(db1_,precision=5)}")
+print(f"     dl1: {fmt_deg_str(dl1_,precision=5)}")
+print(f"     db2: {fmt_deg_str(db2_,precision=5)}")
+print(f"     dl2: {fmt_deg_str(dl2_,precision=5)}")
