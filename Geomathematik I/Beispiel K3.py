@@ -1,7 +1,7 @@
 from libsphere import SphereCoords, ha1, ha2
 from math import degrees, radians
 
-P1 = SphereCoords.from_phi_lamda(
+P1 = SphereCoords(
     phi=radians(-15),
     lam=radians(112),
 )

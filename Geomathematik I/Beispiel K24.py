@@ -19,6 +19,7 @@ s21, a21 = ha2(P2, P1)
 s13 = 10500  # km
 a23 = from_deg(31, 24, 12)
 
+# TODO Nur eine gültige Lösung!!
 T, T_ = SphereTriangle.ssw(
     alpha=tau - a21 + a23,
     a=s13 / radius,
