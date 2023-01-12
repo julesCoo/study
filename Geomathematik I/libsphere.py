@@ -1,7 +1,7 @@
 from __future__ import annotations
-from math import asin, atan2, cos, radians, sin, pi, sqrt, atan
+from math import asin, atan2, cos, degrees, radians, sin, pi, sqrt, atan
 from lib3d import Vec3
-from libgeo import fmt_deg_str
+from libgeo import fmt_deg_str, from_deg
 
 # A spherical triangle is created from the intersection of 3 great circles
 # on a unit sphere. All angles and sides are given in radians.
@@ -144,9 +144,18 @@ class SphereTriangle:
         ssa = sin(s - a)
         ssb = sin(s - b)
         ssc = sin(s - c)
-        alpha = 2 * atan(sqrt(ssb * ssc / (ss * ssa)))
-        beta = 2 * atan(sqrt(ssa * ssc / (ss * ssb)))
-        gamma = 2 * atan(sqrt(ssa * ssb / (ss * ssc)))
+        if ssa == 0:
+            alpha = pi
+        else:
+            alpha = 2 * atan(sqrt(ssb * ssc / (ss * ssa)))
+        if ssb == 0:
+            beta = pi
+        else:
+            beta = 2 * atan(sqrt(ssa * ssc / (ss * ssb)))
+        if ssc == 0:
+            gamma = pi
+        else:
+            gamma = 2 * atan(sqrt(ssa * ssb / (ss * ssc)))
         return alpha, beta, gamma
 
     # Unnamed helper method
@@ -197,7 +206,13 @@ class SphereCoords:
             return self.r
         raise IndexError("index out of range")
 
-    def to_vec3(self):
+    def lat(self) -> float:
+        return degrees(self.phi)
+
+    def lon(self) -> float:
+        return degrees(self.lam)
+
+    def to_vec3(self) -> Vec3:
         phi, lam, r = self
         x = r * cos(phi) * cos(lam)
         y = r * cos(phi) * sin(lam)
@@ -328,3 +343,63 @@ def bgs(
     # P3, _ = ha1(P2, s23, a23)
 
     return P3
+
+
+import numpy as np
+import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
+
+
+class SpherePlot:
+    ax: plt.Axes
+
+    def __init__(self, top_left: SphereCoords, bottom_right: SphereCoords):
+        self.ax = plt.axes(projection=ccrs.PlateCarree())
+        self.ax.coastlines(alpha=0.1)
+
+        top = top_left.lat()
+        left = top_left.lon()
+        bottom = bottom_right.lat()
+        right = bottom_right.lon()
+        self.ax.set_extent([left, right, top, bottom])
+
+    def show(self):
+        plt.show()
+
+    def point(self, p: SphereCoords, **kwargs):
+        self.ax.plot(p.lon(), p.lat(), transform=ccrs.PlateCarree(), **kwargs)
+
+    def line(self, p1: SphereCoords, p2: SphereCoords, **kwargs):
+        dist, azimuth = ha2(p1, p2)
+
+        pts = [(p1.lon(), p1.lat())]
+        for d in np.linspace(0, dist, int(dist / 0.01)):
+            p, _ = ha1(p1, d, azimuth)
+            pts.append((p.lon(), p.lat()))
+
+        self.ax.plot(*zip(*pts), transform=ccrs.PlateCarree(), **kwargs)
+
+    def circle(self, center: SphereCoords, radius: float, **kwargs):
+        pts = []
+        for azimuth in np.linspace(0, 2 * pi, 72):
+            p, _ = ha1(center, radius, azimuth)
+            pts.append((p.lon(), p.lat()))
+
+        self.ax.plot(*zip(*pts), transform=ccrs.PlateCarree(), **kwargs)
+
+    def azimuth(self, point: SphereCoords, azimuth: float, length: float, **kwargs):
+        pn, _ = ha1(point, 0.03, 0)
+        self.line(point, pn, color="gray", linestyle="dotted")
+
+        pa, _ = ha1(point, length, azimuth)
+        self.line(point, pa, **kwargs)
+
+        # draw angle
+        pts = []
+        for azimuth in np.linspace(0, azimuth, int(azimuth / 0.2)):
+            try:
+                p, _ = ha1(point, 0.005, azimuth)
+                pts.append((p.lon(), p.lat()))
+            except:
+                pass
+        self.ax.plot(*zip(*pts), transform=ccrs.PlateCarree(), **kwargs)

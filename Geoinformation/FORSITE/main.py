@@ -4,63 +4,39 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import pathlib
+from scipy.ndimage import zoom
+import rasterio
+from rasterio.io import MemoryFile
+from rasterio.transform import from_bounds
+from rasterio.warp import calculate_default_transform
+import shapely.geometry
+from rasterio.features import geometry_mask
 
 PIL.Image.MAX_IMAGE_PIXELS = 933120000
-os.chdir(os.path.dirname(__file__))
 
-data = gpd.read_file("data/Flaechenwidmung.gpkg", rows=20000)
-# data = data[data["Darstell"].isin([7, 19])]
-# data.to_file("data/Flaechenwidmung_Forest.gpkg", driver="GPKG")
+# Coordinates of Styria region
+x0, y0 = 13.55, 47.82
+x1, y1 = 16.18, 46.60
 
-# data = gpd.read_file("data/Flaechenwidmung_Forest.gpkg")
+# Where to find the data
+data_dir = pathlib.Path(__file__).parent.absolute() / "data"
+fp_csv = data_dir / "Waldstandorte" / "hwg_hist.csv"
+fp_tif = data_dir / "Waldstandorte" / "hwg_hist.tif"
 
-# print all columns except "geometry"
-# print(
-#     data[
-#         [
-#             "WIDMUNG",
-#             "ZSW",
-#             # "MIND",
-#             # "MAXD",
-#             # "MAXH",
-#             # "GEMNR",
-#             # "ID_UPLOAD",
-#             "Darstell",
-#             "Beschrift",
-#             "EBENE",
-#             # "SCHNITTST",
-#             # "gemnr_alt",
-#             "INFOTXT",
-#             # "GEMNR_NEU",
-#             # "VFNR",
-#         ]
-#     ]
-# )
+# Image uses WGS84 transform
+# Select the region of interest
+left = 14
+right = 15
+top = 47
+bottom = 46
 
-# print all unique values of "WIDMUNG"
-print(data["INFOTXT"].unique())
-
-exit()
-
-# split up rows accordint to the "Darstell" column
-data_by_type = {}
-for darstell in data["Darstell"].unique():
-    data_by_type[darstell] = data[data["Darstell"] == darstell]
-
-print(data_by_type.keys())
-
-forest = data_by_type[7] + data_by_type[19]
-print(forest.shape)
-
-# plot polygons, filled with green
-forest.plot(color="green")
-# unknown.plot(color="black")
-plt.show()
-
-# img = plt.imread("data/Klimazonen/CZ_4550.tif")[:, :, 0]
-# data = pd.read_csv("data/Klimazonen/CZ_4550.csv")
-
-# print(img.shape)
-
-# plt.imshow(img, cmap="jet", vmin=0, vmax=12)
-# plt.show()
+# open the image but only load region of interest
+with rasterio.open(fp_tif) as dataset:
+    print(dataset.transform * (0, 0))
+    print(dataset.crs)
+    print(dataset.indexes)
+    band1 = dataset.read(1, window=((5000, 6000), (5000, 6000)))
+    print(band1.shape)
+    plt.imshow(band1)
+    plt.show()
