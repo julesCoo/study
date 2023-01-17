@@ -1,36 +1,108 @@
 from __future__ import annotations
-from math import asin, atan2, cos, degrees, radians, sin, pi, sqrt, atan
+from dataclasses import dataclass
+from math import asin, atan2, cos, degrees, radians, sin, pi, sqrt, atan, tau
 from lib3d import Vec3
-from libgeo import fmt_deg_str, from_deg
+from libgeo import fmt_deg_str, clamp_rad
+
+
+def _cosineRuleForSides(a: float, b: float, gamma: float):
+    """
+    Cosine rule for sides
+
+    Given 2 sides of a spheric triangle, and the angle between them, calculate the third side.
+    """
+    return 2 * atan(
+        sqrt(sin((a - b) / 2) ** 2 + sin(a) * sin(b) * sin(gamma / 2) ** 2)
+        / sqrt(cos((a + b) / 2) ** 2 + sin(a) * sin(b) * cos(gamma / 2) ** 2)
+    )
+
+
+def _cosineRuleForAngles(c: float, alpha: float, beta: float):
+    """
+    Cosine rule for angles
+
+    Given a side of a spheric triangle, and the two angles on this side, calculate the third angle.
+    """
+    return 2 * atan(
+        sqrt(cos((alpha + beta) / 2) ** 2 + sin(alpha) * sin(beta) * sin(c / 2) ** 2)
+        / sqrt(sin((alpha - beta) / 2) ** 2 + sin(alpha) * sin(beta) * cos(c / 2) ** 2)
+    )
+
+
+def _halfSideFormula(alpha: float, beta: float, gamma: float):
+    """
+    Half-side formula
+
+    Given 3 angles of a spheric triangle, calculate the sides between them.
+    """
+    rho = (alpha + beta + gamma) / 2
+    cr = cos(rho)
+    cra = cos(rho - alpha)
+    crb = cos(rho - beta)
+    crg = cos(rho - gamma)
+    a = 2 * atan(1 / sqrt(crb * crg / (-cr * cra)))
+    b = 2 * atan(1 / sqrt(cra * crg / (-cr * crb)))
+    c = 2 * atan(1 / sqrt(cra * crb / (-cr * crg)))
+    return a, b, c
+
+
+def _halfAngleFormula(a: float, b: float, c: float):
+    """
+    Half-angle formula
+
+    Given 3 sides of a spheric triangle, calculate the angles between them.
+    """
+    s = (a + b + c) / 2
+    if a > s or b > s or c > s:
+        raise ValueError(
+            "Triangle inequality violated: One side is longer than the other two combined!"
+        )
+
+    ss = sin(s)
+    ssa = sin(s - a)
+    ssb = sin(s - b)
+    ssc = sin(s - c)
+
+    if ssa == 0:
+        alpha = pi
+    else:
+        alpha = 2 * atan(sqrt(ssb * ssc / (ss * ssa)))
+
+    if ssb == 0:
+        beta = pi
+    else:
+        beta = 2 * atan(sqrt(ssa * ssc / (ss * ssb)))
+
+    if ssc == 0:
+        gamma = pi
+    else:
+        gamma = 2 * atan(sqrt(ssa * ssb / (ss * ssc)))
+
+    return alpha, beta, gamma
+
+
+def _helper(a: float, c: float, alpha: float, gamma: float):
+    """
+    Unnamed helper method
+
+    Given two sides and two angles, calculate the third angle.
+    """
+    return 2 * atan(
+        sqrt(sin((a - c) / 2) ** 2 + sin(a) * sin(c) * cos((alpha + gamma) / 2) ** 2)
+        / sqrt(cos((a + c) / 2) ** 2 + sin(a) * sin(c) * sin((alpha - gamma) / 2) ** 2)
+    )
+
 
 # A spherical triangle is created from the intersection of 3 great circles
 # on a unit sphere. All angles and sides are given in radians.
+@dataclass
 class SphereTriangle:
-    alpha: float
-    beta: float
-    gamma: float
     a: float
     b: float
     c: float
-
-    def __init__(
-        self,
-        a: float,
-        b: float,
-        c: float,
-        alpha: float,
-        beta: float,
-        gamma: float,
-    ):
-        self.a = a
-        self.b = b
-        self.c = c
-        self.alpha = alpha
-        self.beta = beta
-        self.gamma = gamma
-
-    def __repr__(self) -> str:
-        return f"SphereTriangle({self.a}, {self.b}, {self.c}, {self.alpha}, {self.beta}, {self.gamma})"
+    alpha: float
+    beta: float
+    gamma: float
 
     def excess(self) -> float:
         return self.alpha + self.beta + self.gamma - pi
@@ -39,138 +111,119 @@ class SphereTriangle:
         return self.excess() * radius**2
 
     @classmethod
-    def ppp(cls, p1: SphereCoords, p2: SphereCoords, p3: SphereCoords):
-        s12, _ = ha2(p1, p2)
-        s23, _ = ha2(p2, p3)
-        s31, _ = ha2(p3, p1)
-        return cls.sss(s12, s23, s31)
+    def ppp(
+        SphereTriangle,
+        p1: SphereCoords,
+        p2: SphereCoords,
+        p3: SphereCoords,
+    ) -> SphereTriangle:
+        a, _, _ = ha2(p1, p2)
+        b, _, _ = ha2(p2, p3)
+        c, _, _ = ha2(p3, p1)
+        return SphereTriangle.sss(a, b, c)
 
     @classmethod
-    def sws(cls, a: float, b: float, gamma: float) -> SphereTriangle:
-        c = cls._sws(a, b, gamma)
-        alpha, beta, gamma = cls._sss(a, b, c)
-        return cls(a, b, c, alpha, beta, gamma)
+    def sws(
+        SphereTriangle,
+        a: float,
+        b: float,
+        gamma: float,
+    ) -> SphereTriangle:
+        c = _cosineRuleForSides(a, b, gamma)
+        alpha, beta, _ = _halfAngleFormula(a, b, c)
+        return SphereTriangle(a, b, c, alpha, beta, gamma)
 
     @classmethod
-    def wsw(cls, alpha: float, beta: float, c: float) -> SphereTriangle:
-        gamma = cls._wsw(c, alpha, beta)
-        a, b, c = cls._www(alpha, beta, gamma)
-        return cls(a, b, c, alpha, beta, gamma)
+    def wsw(
+        SphereTriangle,
+        alpha: float,
+        beta: float,
+        c: float,
+    ) -> SphereTriangle:
+        gamma = _cosineRuleForAngles(c, alpha, beta)
+        a, b, _ = _halfSideFormula(alpha, beta, gamma)
+        return SphereTriangle(a, b, c, alpha, beta, gamma)
 
     @classmethod
     def ssw(
-        cls, a: float, c: float, alpha: float
-    ) -> tuple[SphereTriangle, SphereTriangle]:
-        gamma1 = asin(sin(c) * sin(alpha) / sin(a))
-        b1 = cls._helper(a, c, alpha, gamma1)
-        alpha1, beta1, gamma1 = cls._sss(a, b1, c)
+        SphereTriangle,
+        a: float,
+        c: float,
+        alpha: float,
+    ) -> list[SphereTriangle]:
+        solutions = []
 
-        gamma2 = pi - gamma1
-        b2 = cls._helper(a, c, alpha, gamma2)
-        alpha2, beta2, gamma2 = cls._sss(a, b2, c)
+        # Half Angle Formula could produce angles that do not match the input.
+        # In this case, we need to discard the solution.
+        def is_valid(w1, w2):
+            print(w1, w2)
+            return abs(w1 - w2) < 1e-6
 
-        return (
-            cls(a, b1, c, alpha1, beta1, gamma1),
-            cls(a, b2, c, alpha2, beta2, gamma2),
-        )
+        # First solution
+        gamma = asin(sin(c) * sin(alpha) / sin(a))
+        b = _helper(a, c, alpha, gamma)
+        alpha_, beta, gamma_ = _halfAngleFormula(a, b, c)
+        if is_valid(alpha, alpha_) and is_valid(gamma, gamma_):
+            solutions.append(SphereTriangle(a, b, c, alpha, beta, gamma))
+
+        # Second solution
+        gamma = pi - gamma
+        b = _helper(a, c, alpha, gamma)
+        alpha_, beta, gamma_ = _halfAngleFormula(a, b, c)
+        if is_valid(alpha, alpha_) and is_valid(gamma, gamma_):
+            solutions.append(SphereTriangle(a, b, c, alpha, beta, gamma))
+
+        return solutions
 
     @classmethod
     def wws(
-        cls, alpha: float, gamma: float, a: float
-    ) -> tuple[SphereTriangle, SphereTriangle]:
-        c1 = asin(sin(a) / sin(alpha) * sin(gamma))
-        b1 = cls._helper(a, c1, alpha, gamma)
-        alpha1, beta1, gamma1 = cls._sss(a, b1, c1)
+        SphereTriangle,
+        alpha: float,
+        gamma: float,
+        a: float,
+    ) -> list[SphereTriangle]:
+        solutions = []
 
-        c2 = pi - c1
-        b2 = cls._helper(a, c2, alpha, gamma)
-        alpha2, beta2, gamma2 = cls._sss(a, b2, c2)
+        # Half Angle Formula could produce angles that do not match the input.
+        # In this case, we need to discard the solution.
+        def is_valid(w1, w2):
+            return abs(w1 - w2) < 1e-6
 
-        return (
-            cls(a, b1, c1, alpha1, beta1, gamma1),
-            cls(a, b2, c2, alpha2, beta2, gamma2),
-        )
+        # First solution
+        c = asin(sin(a) / sin(alpha) * sin(gamma))
+        b = _helper(a, c, alpha, gamma)
+        alpha1, beta, gamma1 = _halfAngleFormula(a, b, c)
+        if is_valid(alpha1, alpha) and is_valid(gamma1, gamma):
+            solutions.append(SphereTriangle(a, b, c, alpha, beta, gamma))
+
+        # Second solution
+        c = pi - c
+        b = _helper(a, c, alpha, gamma)
+        alpha2, beta, gamma2 = _halfAngleFormula(a, b, c)
+        if is_valid(alpha2, alpha) and is_valid(gamma2, gamma):
+            solutions.append(SphereTriangle(a, b, c, alpha, beta, gamma))
+
+        return solutions
 
     @classmethod
-    def sss(cls, a: float, b: float, c: float) -> SphereTriangle:
-        alpha, beta, gamma = cls._sss(a, b, c)
-        return cls(a, b, c, alpha, beta, gamma)
+    def sss(
+        SphereTriangle,
+        a: float,
+        b: float,
+        c: float,
+    ) -> SphereTriangle:
+        alpha, beta, gamma = _halfAngleFormula(a, b, c)
+        return SphereTriangle(a, b, c, alpha, beta, gamma)
 
     @classmethod
-    def www(cls, alpha: float, beta: float, gamma: float) -> SphereTriangle:
-        a, b, c = cls._www(alpha, beta, gamma)
-        return cls(a, b, c, alpha, beta, gamma)
-
-    # Cosine rule for sides
-    # Given 2 sides of a spheric triangle, and the angle between them, calculate the third side.
-    def _sws(b: float, c: float, alpha: float):
-        sin_a_half = sqrt(sin((b - c) / 2) ** 2 + sin(b) * sin(c) * sin(alpha / 2) ** 2)
-        cos_a_half = sqrt(cos((b + c) / 2) ** 2 + sin(b) * sin(c) * cos(alpha / 2) ** 2)
-        tan_a_half = sin_a_half / cos_a_half
-        a_half = atan(tan_a_half)
-        a = 2 * a_half
-        return a
-
-    # Cosine rule for angles
-    # Given a side of a spheric triangle, and the two angles on this side, calculate the third angle.
-    def _wsw(a: float, beta: float, gamma: float):
-        sin_alpha_half = sqrt(
-            cos((beta + gamma) / 2) ** 2 + sin(beta) * sin(gamma) * sin(a / 2) ** 2
-        )
-        cos_alpha_half = sqrt(
-            sin((beta - gamma) / 2) ** 2 + sin(beta) * sin(gamma) * cos(a / 2) ** 2
-        )
-        tan_alpha_half = sin_alpha_half / cos_alpha_half
-        alpha_half = atan(tan_alpha_half)
-        alpha = 2 * alpha_half
-        return alpha
-
-    # Half-side formula
-    def _www(alpha: float, beta: float, gamma: float):
-        rho = (alpha + beta + gamma) / 2
-        cr = cos(rho)
-        cra = cos(rho - alpha)
-        crb = cos(rho - beta)
-        crg = cos(rho - gamma)
-        a = 2 * atan(1 / sqrt(crb * crg / (-cr * cra)))
-        b = 2 * atan(1 / sqrt(cra * crg / (-cr * crb)))
-        c = 2 * atan(1 / sqrt(cra * crb / (-cr * crg)))
-        return a, b, c
-
-    # Half-angle formula
-    def _sss(a: float, b: float, c: float):
-        s = (a + b + c) / 2
-        ss = sin(s)
-        ssa = sin(s - a)
-        ssb = sin(s - b)
-        ssc = sin(s - c)
-        if ssa == 0:
-            alpha = pi
-        else:
-            alpha = 2 * atan(sqrt(ssb * ssc / (ss * ssa)))
-        if ssb == 0:
-            beta = pi
-        else:
-            beta = 2 * atan(sqrt(ssa * ssc / (ss * ssb)))
-        if ssc == 0:
-            gamma = pi
-        else:
-            gamma = 2 * atan(sqrt(ssa * ssb / (ss * ssc)))
-        return alpha, beta, gamma
-
-    # Unnamed helper method
-    def _helper(b: float, c: float, beta: float, gamma: float):
-        k = sqrt(1 - sin(b) * sin(c) * sin(beta) * sin(gamma))
-        k_sin_a_half = sqrt(
-            sin((b - c) / 2) ** 2 + sin(b) * sin(c) * cos((beta + gamma) / 2) ** 2
-        )
-        k_cos_a_half = sqrt(
-            cos((b + c) / 2) ** 2 + sin(b) * sin(c) * sin((beta - gamma) / 2) ** 2
-        )
-        tan_a_half = k_sin_a_half / k_cos_a_half
-        a_half = atan(tan_a_half)
-        a = 2 * a_half
-        return a
+    def www(
+        SphereTriangle,
+        alpha: float,
+        beta: float,
+        gamma: float,
+    ) -> SphereTriangle:
+        a, b, c = _halfSideFormula(alpha, beta, gamma)
+        return SphereTriangle(a, b, c, alpha, beta, gamma)
 
 
 # Holds spherical coordinates as latitude and longitude.
@@ -219,8 +272,11 @@ class SphereCoords:
         z = r * sin(phi)
         return Vec3(x, y, z)
 
+    def geodesic_distance_to(self, other: SphereCoords) -> float:
+        return ha2(self, other)[0]
+
     @classmethod
-    def from_vec3(cls, p: Vec3):
+    def from_vec3(SphereCoords, p: Vec3):
         r = p.normalize()
         x, y, z = p
 
@@ -231,33 +287,62 @@ class SphereCoords:
         phi = asin(z)
         lam = atan2(y, x)
 
-        return cls(phi, lam, r)
+        return SphereCoords(phi, lam, r)
+
+    @classmethod
+    def centroid(SphereCoords, points: list[SphereCoords]):
+        p = Vec3(0, 0, 0)
+
+        for point in points:
+            p += point.to_vec3()
+
+        p /= len(points)
+
+        return SphereCoords.from_vec3(p)
 
 
 def ha1(p1: SphereCoords, s12: float, a12: float):
     phi1, lam1, r = p1
 
-    if a12 < radians(180):
+    a12 = clamp_rad(a12)
+
+    if a12 == 0:
+        p2 = SphereCoords(
+            phi=phi1 + s12,
+            lam=lam1,
+            r=r,
+        )
+        a21 = pi
+
+    elif a12 == pi:
+        p2 = SphereCoords(
+            phi=phi1 - s12,
+            lam=lam1,
+            r=r,
+        )
+        a21 = 0
+
+    elif a12 < pi:
         triangle = SphereTriangle.sws(
-            a=radians(90) - phi1,
+            a=pi / 2 - phi1,
             b=s12 / r,
             gamma=a12,
         )
         p2 = SphereCoords(
-            phi=radians(90) - triangle.c,
+            phi=pi / 2 - triangle.c,
             lam=lam1 + triangle.beta,
             r=r,
         )
-        a21 = radians(360) - triangle.alpha
+        a21 = tau - triangle.alpha
 
     else:
         triangle = SphereTriangle.sws(
             a=s12 / r,
-            b=radians(90) - phi1,
-            gamma=radians(360) - a12,
+            b=pi / 2 - phi1,
+            gamma=tau - a12,
         )
         p2 = SphereCoords(
-            phi=radians(90) - triangle.c,
+            phi=pi / 2 - triangle.c,
             lam=lam1 - triangle.alpha,
             r=r,
         )
@@ -272,18 +357,21 @@ def ha2(p1: SphereCoords, p2: SphereCoords):
     assert r1 == r2
 
     # Pole Triangle
-    triangle = SphereTriangle.sws(
+    T = SphereTriangle.sws(
         a=pi / 2 - phi1,
         b=pi / 2 - phi2,
         gamma=lam2 - lam1,
     )
-    distance = triangle.c * r1
-    azimuth = triangle.beta
+    distance = T.c * r1
 
-    if lam1 > lam2:
-        azimuth = radians(360) - azimuth
+    if lam1 < lam2:
+        azimuth = T.beta
+        reverse_azimuth = tau - T.alpha
+    else:
+        azimuth = tau - T.beta
+        reverse_azimuth = T.alpha
 
-    return distance, azimuth
+    return distance, azimuth, reverse_azimuth
 
 
 # Given two positions and their azimuths towards a third position, calculate the third position.
@@ -297,8 +385,7 @@ def vws(
     # At P1 is alpha, at P2 is beta. c is the distance between P1 and P2.
 
     # We already know P1 and P2, so we can calculate their distance and their azimuth towards each other.
-    s12, a12 = ha2(P1, P2)
-    s21, a21 = ha2(P2, P1)
+    s12, a12, a21 = ha2(P1, P2)
 
     if a12 > a13:
         # P3 is "over" P1 and P2.
@@ -350,56 +437,112 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 
 
-class SpherePlot:
-    ax: plt.Axes
+def plot_point(point: SphereCoords, text: str = None, **kwargs):
+    """Draw a spherical coordinate as a point on the map."""
+    x, y = plt.gca().projection.transform_point(
+        point.lon(), point.lat(), ccrs.PlateCarree()
+    )
 
-    def __init__(self, top_left: SphereCoords, bottom_right: SphereCoords):
-        self.ax = plt.axes(projection=ccrs.PlateCarree())
-        self.ax.coastlines(alpha=0.1)
+    plt.plot(x, y, **kwargs)
+    if text is not None:
+        plt.annotate(
+            text,
+            (x, y - 1.2e5),
+            color="black",
+            ha="center",
+            fontweight="bold",
+        )
 
-        top = top_left.lat()
-        left = top_left.lon()
-        bottom = bottom_right.lat()
-        right = bottom_right.lon()
-        self.ax.set_extent([left, right, top, bottom])
 
-    def show(self):
-        plt.show()
+def plot_line(p1: SphereCoords, p2: SphereCoords, **kwargs):
+    """Draw a geodesic line between two points, which will be curved by the projection."""
+    # Calculate the distance and azimuth between the two points.
+    max_dist, azimuth, _ = ha2(p1, p2)
 
-    def point(self, p: SphereCoords, **kwargs):
-        self.ax.plot(p.lon(), p.lat(), transform=ccrs.PlateCarree(), **kwargs)
+    # Interpolate a number of positions between the two points and calculate their spherical coordinates.
+    granularity = 0.01
+    num_points = int(max_dist / granularity)
 
-    def line(self, p1: SphereCoords, p2: SphereCoords, **kwargs):
-        dist, azimuth = ha2(p1, p2)
+    coordinates = [p1]
+    for dist in np.linspace(0, max_dist, num_points):
+        p, _ = ha1(p1, dist, azimuth)
+        coordinates.append(p)
 
-        pts = [(p1.lon(), p1.lat())]
-        for d in np.linspace(0, dist, int(dist / 0.01)):
-            p, _ = ha1(p1, d, azimuth)
-            pts.append((p.lon(), p.lat()))
+    # Connect the points with a line.
+    plt.plot(
+        list(map(lambda p: p.lon(), coordinates)),
+        list(map(lambda p: p.lat(), coordinates)),
+        transform=ccrs.PlateCarree(),
+        **kwargs,
+    )
 
-        self.ax.plot(*zip(*pts), transform=ccrs.PlateCarree(), **kwargs)
 
-    def circle(self, center: SphereCoords, radius: float, **kwargs):
-        pts = []
-        for azimuth in np.linspace(0, 2 * pi, 72):
-            p, _ = ha1(center, radius, azimuth)
-            pts.append((p.lon(), p.lat()))
+def plot_circle(center: SphereCoords, radius: float, **kwargs):
+    """Draw a geodesic circle around a point, which be squashed by the projection."""
+    # Interpolate a number of positions around the point in the given distance,
+    # and calculate their spherical coordinates.
+    coordinates: list[SphereCoords] = []
+    for azimuth in np.linspace(0, 2 * pi, 72):
+        p, _ = ha1(center, radius, azimuth)
+        coordinates.append(p)
 
-        self.ax.plot(*zip(*pts), transform=ccrs.PlateCarree(), **kwargs)
+    # Connect the points with a line.
+    plt.plot(
+        list(map(lambda p: p.lon(), coordinates)),
+        list(map(lambda p: p.lat(), coordinates)),
+        transform=ccrs.PlateCarree(),
+        **kwargs,
+    )
 
-    def azimuth(self, point: SphereCoords, azimuth: float, length: float, **kwargs):
-        pn, _ = ha1(point, 0.03, 0)
-        self.line(point, pn, color="gray", linestyle="dotted")
 
-        pa, _ = ha1(point, length, azimuth)
-        self.line(point, pa, **kwargs)
+def plot_azimuth(point: SphereCoords, azimuth: float, length: float = 0, **kwargs):
+    """Draw an azimuth line from a point, which will be curved by the projection. Also draws the angle into the map."""
 
-        # draw angle
-        pts = []
-        for azimuth in np.linspace(0, azimuth, int(azimuth / 0.2)):
-            try:
-                p, _ = ha1(point, 0.005, azimuth)
-                pts.append((p.lon(), p.lat()))
-            except:
-                pass
-        self.ax.plot(*zip(*pts), transform=ccrs.PlateCarree(), **kwargs)
+    north_dist = 0.02
+    angle_dist = 0.01
+    angle_granularity = 0.2
+
+    # Get a point to the north of the given point, and draw an indication line to it.
+    pn, _ = ha1(point, north_dist, 0)
+    plot_line(point, pn, color="gray", linestyle="dotted")
+
+    # Draw the angle from the north direction to the given azimuth.
+    coordinates: list[SphereCoords] = []
+    for azimuth in np.linspace(0, azimuth, int(azimuth / angle_granularity)):
+        p, _ = ha1(point, angle_dist, azimuth)
+        coordinates.append(p)
+    plt.plot(
+        list(map(lambda p: p.lon(), coordinates)),
+        list(map(lambda p: p.lat(), coordinates)),
+        transform=ccrs.PlateCarree(),
+        **kwargs,
+    )
+
+    # Draw the azimuth line from the point.
+    pa, _ = ha1(point, length, azimuth)
+    plot_line(point, pa, **kwargs)
+
+
+def plot_angle(p1: SphereCoords, p2: SphereCoords, p3: SphereCoords, **kwargs):
+    """Draw an angle between the two rays p1p2 and p2p3"""
+
+    _, a12, _ = ha2(p1, p2)
+    _, a13, _ = ha2(p1, p3)
+
+    dist = 0.01
+    granularity = 0.1
+
+    if a13 < a12:
+        a13 += tau
+
+    coordinates = []
+    for azimuth in np.linspace(a12, a13, int(abs((a13 - a12) / granularity))):
+        p, _ = ha1(p1, dist, azimuth % tau)
+        coordinates.append(p)
+
+    plt.plot(
+        list(map(lambda p: p.lon(), coordinates)),
+        list(map(lambda p: p.lat(), coordinates)),
+        transform=ccrs.PlateCarree(),
+        **kwargs,
+    )

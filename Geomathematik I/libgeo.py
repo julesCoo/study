@@ -1,6 +1,15 @@
 from math import tau
 import re
 
+
+def clamp_rad(a):
+    while a < 0:
+        a += tau
+    while a >= tau:
+        a -= tau
+    return a
+
+
 # Converts radians to gradians (gon).
 # Similar to math.degrees().
 def gradians(radians: float) -> float:
