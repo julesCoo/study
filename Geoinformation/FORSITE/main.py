@@ -1,42 +1,49 @@
-import os
-import PIL
+#%%
 import numpy as np
-import pandas as pd
-import geopandas as gpd
-import matplotlib.pyplot as plt
 import pathlib
-from scipy.ndimage import zoom
 import rasterio
-from rasterio.io import MemoryFile
-from rasterio.transform import from_bounds
-from rasterio.warp import calculate_default_transform
-import shapely.geometry
-from rasterio.features import geometry_mask
-
-PIL.Image.MAX_IMAGE_PIXELS = 933120000
-
-# Coordinates of Styria region
-x0, y0 = 13.55, 47.82
-x1, y1 = 16.18, 46.60
+import rasterio.windows
+import rasterio.features
+import matplotlib.pyplot as plt
+import pyproj
 
 # Where to find the data
 data_dir = pathlib.Path(__file__).parent.absolute() / "data"
-fp_csv = data_dir / "Waldstandorte" / "hwg_hist.csv"
-fp_tif = data_dir / "Waldstandorte" / "hwg_hist.tif"
+# fp_csv = data_dir / "Topographie" / "Dgm.csv"
+fp_tif = data_dir / "Topographie" / "dgm.tif"
+# fp_tif = data_dir / "Klimazonen" / "CZ_hist.tif"
+# fp_tif = data_dir / "Waldgruppen" / "hwg_4550.tif"
+fp_tif = data_dir / "Hauptwaldstandorte" / "hwsto_hist.tif"
 
-# Image uses WGS84 transform
-# Select the region of interest
-left = 14
-right = 15
-top = 47
-bottom = 46
+dataset = rasterio.open(fp_tif)
 
-# open the image but only load region of interest
-with rasterio.open(fp_tif) as dataset:
-    print(dataset.transform * (0, 0))
-    print(dataset.crs)
-    print(dataset.indexes)
-    band1 = dataset.read(1, window=((5000, 6000), (5000, 6000)))
-    print(band1.shape)
-    plt.imshow(band1)
-    plt.show()
+# lat, lon = 47.18180603462566, 14.717421581467315
+lat, lon = 47.17178876044296, 15.766503713838189
+lat, lon = 47.41732089761018, 15.329019534710724
+
+transformer = pyproj.Transformer.from_crs("EPSG:4326", "EPSG:32633", always_xy=True)
+x, y = transformer.transform(lon, lat)
+
+window_size = 1000
+window = rasterio.windows.from_bounds(
+    left=x - window_size // 2,
+    bottom=y - window_size // 2,
+    right=x + window_size // 2,
+    top=y + window_size // 2,
+    transform=dataset.transform,
+)
+
+
+band1 = dataset.read(1, window=window)
+# create a colormap from unique values
+
+min = np.min(band1)
+max = np.max(band1)
+print(np.unique(band1))
+plt.imshow(band1, vmin=min, vmax=max, cmap="tab20")
+
+# extract polygons from raster
+polys = list(rasterio.features.shapes(band1, transform=dataset.transform))
+print(list(map(lambda x: x[1], polys)))
+
+# %%

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from math import sqrt, sin, cos, acos, tau
+from math import asin, sqrt, sin, cos, acos, tau
 from itertools import product
 
 
@@ -81,8 +81,15 @@ class Vec3:
             and abs(self.z - other.z) < epsilon
         )
 
-    def angle_between(self, other: Vec3) -> float:
-        return acos(self.dot(other) / (self.length() * other.length()))
+    def angle_between(
+        self,
+        other: Vec3,
+        optimize_for_small_angles: bool = False,
+    ) -> float:
+        if optimize_for_small_angles:
+            return asin(self.cross(other).length() / (self.length() * other.length()))
+        else:
+            return acos(self.dot(other) / (self.length() * other.length()))
 
     def distance_to(self, other: Vec3) -> float:
         return sqrt(
