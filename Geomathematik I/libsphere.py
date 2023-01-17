@@ -156,8 +156,7 @@ class SphereTriangle:
         # Half Angle Formula could produce angles that do not match the input.
         # In this case, we need to discard the solution.
         def is_valid(w1, w2):
-            print(w1, w2)
-            return abs(w1 - w2) < 1e-6
+            return abs(w1 - w2) < 1e-2
 
         # First solution
         gamma = asin(sin(c) * sin(alpha) / sin(a))
