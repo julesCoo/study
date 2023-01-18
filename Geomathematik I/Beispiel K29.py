@@ -1,10 +1,10 @@
 #%%
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-from mpl_toolkits.basemap import Basemap
 from math import degrees, radians
 from libgeo import from_deg
-from libsphere import SphereTriangle, SphereCoords, ha1, ha2
+from libsphere import SphereTriangle, SphereCoords, ha1, ha2, plot_line, plot_point
+
 
 r = 6370  # km
 
@@ -46,18 +46,32 @@ print(f"P2: {P2}")
 print(f"Distance: {dist} km")
 
 ax = plt.subplot(projection=ccrs.Mercator())
-ax.set_extent([-4, 4, -34, -30])
-# ax.coastlines(alpha=0.2)
-# gl = ax.gridlines(
-#     crs=ccrs.PlateCarree(),
-#     draw_labels=True,
-#     # xlocs=[0, 4],
-#     # ylocs=[50, 54, 58],
-#     linewidth=0.25,
-# )
-# gl.top_labels = False
-# gl.right_labels = False
-# plt.show()
+ax.stock_img()
+ax.set_extent([-40, -25, -6, 4])
+ax.coastlines(alpha=1)
+gl = ax.gridlines(
+    crs=ccrs.PlateCarree(),
+    draw_labels=True,
+    # xlocs=[0, 4],
+    # ylocs=[50, 54, 58],
+    linewidth=0.25,
+)
+gl.top_labels = False
+gl.right_labels = False
+
+plot_line(A, B, color="black")
+
+plot_point(A, "A", marker="^", color="black")
+plot_point(B, "B", marker="^", color="black")
+
+plot_line(SphereCoords(-6, lam1), SphereCoords(4, lam1), color="red")
+plot_point(P1, "P1", marker="o", color="red")
+
+plot_line(SphereCoords(phi2, -34), SphereCoords(phi2, -30), color="green")
+plot_point(P2, "P2", marker="o", color="green")
+
+
+plt.show()
 
 # SphereTriangle.ssw(
 #     a=degrees(90) - phi2,

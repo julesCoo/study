@@ -355,20 +355,29 @@ def ha2(p1: SphereCoords, p2: SphereCoords):
     phi2, lam2, r2 = p2
     assert r1 == r2
 
-    # Pole Triangle
-    T = SphereTriangle.sws(
-        a=pi / 2 - phi1,
-        b=pi / 2 - phi2,
-        gamma=lam2 - lam1,
-    )
-    distance = T.c * r1
-
-    if lam1 < lam2:
-        azimuth = T.beta
-        reverse_azimuth = tau - T.alpha
+    if lam1 == lam2:
+        distance = abs(phi1 - phi2) * r1
+        if phi1 < phi2:
+            azimuth = 0
+            reverse_azimuth = pi
+        else:
+            azimuth = pi
+            reverse_azimuth = 0
     else:
-        azimuth = tau - T.beta
-        reverse_azimuth = T.alpha
+        # Pole Triangle
+        T = SphereTriangle.sws(
+            a=pi / 2 - phi1,
+            b=pi / 2 - phi2,
+            gamma=lam2 - lam1,
+        )
+        distance = T.c * r1
+
+        if lam1 < lam2:
+            azimuth = T.beta
+            reverse_azimuth = tau - T.alpha
+        else:
+            azimuth = tau - T.beta
+            reverse_azimuth = T.alpha
 
     return distance, azimuth, reverse_azimuth
 
