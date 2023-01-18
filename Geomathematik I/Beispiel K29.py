@@ -16,8 +16,6 @@ B = SphereCoords(from_deg(-3, 46), from_deg(-32, 27))
 lam1 = from_deg(-30, 30)
 phi2 = from_deg(-2, 45)
 
-# todo: calculate distance between p1 and p2
-
 # Calculate the azimuth of the ship's direction at A
 _, aAB, _ = ha2(A, B)
 
