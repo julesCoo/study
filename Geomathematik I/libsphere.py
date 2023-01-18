@@ -445,7 +445,12 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 
 
-def plot_point(point: SphereCoords, text: str = None, **kwargs):
+def plot_point(
+    point: SphereCoords,
+    text: str = None,
+    text_xy=(0, 1.2e5),
+    **kwargs,
+):
     """Draw a spherical coordinate as a point on the map."""
     x, y = plt.gca().projection.transform_point(
         point.lon(), point.lat(), ccrs.PlateCarree()
@@ -455,7 +460,7 @@ def plot_point(point: SphereCoords, text: str = None, **kwargs):
     if text is not None:
         plt.annotate(
             text,
-            (x, y - 1.2e5),
+            (x + text_xy[0], y + text_xy[1]),
             color="black",
             ha="center",
             fontweight="bold",

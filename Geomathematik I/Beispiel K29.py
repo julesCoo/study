@@ -59,14 +59,14 @@ gl.right_labels = False
 
 plot_line(A, B, color="black")
 
-plot_point(A, "A", marker="^", color="black")
-plot_point(B, "B", marker="^", color="black")
+plot_point(A, "A", marker="^", color="black", text_xy=(5e4, -2e4))
+plot_point(B, "B", marker="^", color="black", text_xy=(5e4, -2e4))
 
 plot_line(SphereCoords(-6, lam1), SphereCoords(4, lam1), color="red")
-plot_point(P1, "P1", marker="o", color="red")
+plot_point(P1, "P1", marker="o", color="red", text_xy=(5e4, -2e4))
 
 plot_line(SphereCoords(phi2, -34), SphereCoords(phi2, -30), color="green")
-plot_point(P2, "P2", marker="o", color="green")
+plot_point(P2, "P2", marker="o", color="green", text_xy=(5e4, -2e4))
 
 
 plt.show()
