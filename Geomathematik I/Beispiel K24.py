@@ -1,5 +1,5 @@
 from math import tau
-from libgeo import from_deg
+from libgeo import fmt_deg, fmt_deg_str, from_deg
 from libsphere import SphereCoords, SphereTriangle, ha1, ha2
 
 radius = 6370  # km
@@ -14,7 +14,7 @@ P2 = SphereCoords(
     lam=from_deg(-30, 26, 4),
 )
 
-s21, a21, _ = ha2(P2, P1)
+s12, a12, a21 = ha2(P1, P2)
 
 s13 = 10500  # km
 a23 = from_deg(31, 24, 12)
@@ -22,7 +22,7 @@ a23 = from_deg(31, 24, 12)
 [T] = SphereTriangle.ssw(
     alpha=a21 - a23,
     a=s13 / radius,
-    c=s21,
+    c=s12,
 )
 
 P3, _ = ha1(P2, T.b, a23)

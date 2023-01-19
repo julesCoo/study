@@ -365,6 +365,7 @@ def ha2(p1: SphereCoords, p2: SphereCoords):
             reverse_azimuth = 0
     else:
         # Pole Triangle
+        # TODO check
         T = SphereTriangle.sws(
             a=pi / 2 - phi1,
             b=pi / 2 - phi2,

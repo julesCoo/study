@@ -62,6 +62,10 @@ s12, a12, a21 = ha2(P1, P2)
 s23, a23, a32 = ha2(P2, P3)
 s31, a31, a13 = ha2(P3, P1)
 
+print(s12, a12, a21)
+print(s23, a23, a32)
+print(s31, a31, a13)
+
 
 w2N1 = clamp_rad(a21 - a2N)
 w23N = clamp_rad(a2N - a23)
