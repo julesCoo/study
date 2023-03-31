@@ -332,9 +332,6 @@ for p in ground_positions:
 # prevent division by zero first, some cells might not have any measurements
 counts[counts == 0] = 1
 Z /= counts
-z_min, z_max = np.min(Z), np.max(Z)
-
-z_max = np.max([p.z for p in drone_positions])
 
 # %%
 """
@@ -361,6 +358,16 @@ ax.grid(False)
 
 # Draw a contour plot of the heightmap at the xy plane
 ax.contourf(X, Y, Z, cmap="plasma", zdir="z", offset=0, alpha=0.8)
+
+# # Draw a scatter plot of the ground positions
+# ax.scatter(
+#     [p.x for p in ground_positions],
+#     [p.y for p in ground_positions],
+#     [p.z for p in ground_positions],
+#     color="black",
+#     s=0.1,
+#     alpha=0.1,
+# )
 
 # Draw a (ghostly) wireframe of the heightmap on top
 ax.plot_wireframe(X, Y, Z, color="black", alpha=0.05)
