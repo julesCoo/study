@@ -158,8 +158,8 @@ class PolarEpoch(Epoch):
 
     def to_position(self) -> PositionEpoch:
         """Converts polar coordinates to cartesian coordinates"""
-        x = self.distance * sin(self.azimuth) * sin(self.zenith)
-        y = self.distance * cos(self.azimuth) * sin(self.zenith)
+        x = self.distance * sin(self.zenith) * cos(self.azimuth)
+        y = self.distance * sin(self.zenith) * sin(self.azimuth)
         z = self.distance * cos(self.zenith)
         return PositionEpoch(self.time, x, y, z)
 
@@ -170,7 +170,6 @@ Now we can load the data from the files.
 
 We have to files containing polar epochs.
 """
-import os
 from pathlib import Path
 
 # Time values are given as offset seconds since 2018-03-13 15:10:00
@@ -212,7 +211,7 @@ def bubble_sort(arr: list) -> list:
     n = len(arr)
     for i in range(n):
         for j in range(0, n - i - 1):
-            if arr[j].time > arr[j + 1].time:
+            if arr[j] > arr[j + 1]:
                 arr[j], arr[j + 1] = arr[j + 1], arr[j]
     return arr
 
@@ -229,7 +228,7 @@ class Timer:
 
     def __exit__(self, *args):
         interval = datetime.now() - self._start
-        print(f"[{self._name}] Time elapsed: {interval.total_seconds()}s")
+        print(f"[{self._name}] Time elapsed: {interval.total_seconds()} s")
 
 
 # Copy the arrays before sorting, so we don't modify the original data
@@ -256,7 +255,7 @@ At each drone position, we expect to find multiple laser scanner measurements.
 Since both lists are sorted by time, we can iterate through the lists in parallel and match
 the measurements according to their epoch time.
 
-This search has a complexity of O(n).
+This search has a complexity of O(n) (but pre-sorting has O(n log n)).
 """
 
 drone_positions: list[PositionEpoch] = []
@@ -310,28 +309,47 @@ y = [p.y for p in ground_positions]
 x_min, x_max = min(x), max(x)
 y_min, y_max = min(y), max(y)
 
+grid_size = 0.5
+
 # Create an xy grid with 50cm resolution
-xs_grid = np.arange(x_min, x_max, 0.5)
-yy_grid = np.arange(y_min, y_max, 0.5)
+xs_grid = np.arange(x_min, x_max, grid_size)
+yy_grid = np.arange(y_min, y_max, grid_size)
 X, Y = np.meshgrid(xs_grid, yy_grid)
 
 # For each grid cell, store the sum of the heights and the count of measurements
 Z = np.zeros_like(X)
-counts = np.zeros_like(X)
+Z_count = np.zeros_like(X)
+
+
+def pos_to_grid_index(p):
+    x_index = int((p.x - x_min) / grid_size)
+    y_index = int((p.y - y_min) / grid_size)
+    return x_index, y_index
+
 
 for p in ground_positions:
     # Determine the grid cell for the current position
-    x_index = np.argmin(np.abs(xs_grid - p.x))
-    y_index = np.argmin(np.abs(yy_grid - p.y))
+    xi, yi = pos_to_grid_index(p)
 
     # Add the height to the grid point
-    Z[y_index, x_index] += p.z
-    counts[y_index, x_index] += 1
+    Z[yi, xi] += p.z
+    Z_count[yi, xi] += 1
 
 # Calculate the average height for each cell
 # prevent division by zero first, some cells might not have any measurements
-counts[counts == 0] = 1
-Z /= counts
+Z_count[Z_count == 0] = 1
+Z /= Z_count
+
+
+def grid_index_to_pos(xi, yi):
+    x = x_min + xi * grid_size
+    y = y_min + yi * grid_size
+    if yi < 0 or xi < 0 or yi >= Z.shape[0] or xi >= Z.shape[1]:
+        z = 0.0
+    else:
+        z = Z[yi, xi]
+    return PositionEpoch(start_date, x, y, z)
+
 
 # %%
 """
@@ -341,11 +359,11 @@ We can now visualize the data in a 3d plot.
 import matplotlib.pyplot as plt
 
 # Create a 3d scene viewed from a favorable angle
-fig = plt.figure(figsize=(10, 10))
+fig = plt.figure(figsize=(10, 10), dpi=300)
 ax = fig.add_subplot(
     projection="3d",
     elev=30,
-    azim=-60,
+    azim=170,
     # we have some issues with the contour plot overlapping the wireframe,
     # so we disable the zorder computation
     computed_zorder=False,
@@ -357,7 +375,7 @@ ax.grid(False)
 
 
 # Draw a contour plot of the heightmap at the xy plane
-ax.contourf(X, Y, Z, cmap="plasma", zdir="z", offset=0, alpha=0.8)
+ax.contourf(X, Y, Z, cmap="inferno", zdir="z", offset=0, alpha=0.8)
 
 # # Draw a scatter plot of the ground positions
 # ax.scatter(
@@ -370,19 +388,71 @@ ax.contourf(X, Y, Z, cmap="plasma", zdir="z", offset=0, alpha=0.8)
 # )
 
 # Draw a (ghostly) wireframe of the heightmap on top
-ax.plot_wireframe(X, Y, Z, color="black", alpha=0.05)
-ax.plot_wireframe(X, Y, Z, color="black", alpha=0.2, rstride=8, cstride=8)
+ax.plot_wireframe(X, Y, Z, color="black", alpha=0.1)
 
-# Draw the flight path of the drone
-ax.plot(
-    [p.x for p in drone_positions],
-    [p.y for p in drone_positions],
-    [p.z for p in drone_positions],
-    color="black",
-    linewidth=2,
-    alpha=0.8,
-)
 
-plt.show()
+def draw_tachymeter(drone_index=170):
+    # Draw a small tachymeter from 5 points :)
+    tachymeter_center = PositionEpoch(start_date, x=-51.28, y=-4.373, z=1.34)
+    tachymeter_head = tachymeter_center + PositionEpoch(start_date, 0.0, 0.0, 0.5)
+    tachymeter_leg1 = tachymeter_center + PositionEpoch(start_date, -1.0, 0.0, -1.5)
+    tachymeter_leg2 = tachymeter_center + PositionEpoch(start_date, 0.0, 1.0, -1.5)
+    tachymeter_leg3 = tachymeter_center + PositionEpoch(start_date, 0.7, -0.7, -1.5)
+    # draw lines from the center to each of the 4 extremities
+    for pos in [tachymeter_leg1, tachymeter_leg2, tachymeter_leg3, tachymeter_head]:
+        ax.plot(
+            [tachymeter_center.x, pos.x],
+            [tachymeter_center.y, pos.y],
+            [tachymeter_center.z, pos.z],
+            color="black",
+        )
+    # draw a dotted line from the tachymeter to a drone position
+    ax.plot(
+        [drone_positions[drone_index].x, tachymeter_head.x],
+        [drone_positions[drone_index].y, tachymeter_head.y],
+        [drone_positions[drone_index].z, tachymeter_head.z],
+        color="red",
+        linewidth=1.0,
+        dashes=[2, 4],
+    )
+
+
+def draw_drone(drone_index=170):
+    p = drone_positions[drone_index]
+    x, y, z = p.x, p.y, p.z
+
+    # Draw a small sphere at the drone position
+    ax.scatter(x, y, z, color="black", s=10)
+
+    # Draw laser lines from the drone to the ground
+    xi, yi = pos_to_grid_index(p)
+    d = 20
+    for dx in np.arange(-d, d, 1):
+        for dy in np.arange(-d, d, 1):
+            p = grid_index_to_pos(xi + dx, yi + dy)
+            ax.plot(
+                [x, p.x],
+                [y, p.y],
+                [z, p.z],
+                color="#ff000005",
+            )
+
+
+def draw_flight_path():
+    ax.plot(
+        [p.x for p in drone_positions],
+        [p.y for p in drone_positions],
+        [p.z for p in drone_positions],
+        color="gray",
+        dashes=[10, 5],
+        linewidth=1,
+        alpha=0.5,
+    )
+
+
+draw_flight_path()
+draw_tachymeter(240)
+draw_drone(240)
+
 
 # %%
