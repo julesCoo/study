@@ -9,18 +9,23 @@ from datetime import datetime
 
 
 def open_landsat_file(
+    satellite_number: str = "L7",
     level: int = 2,
-    start_path: int = 190,
+    path: int = 190,
     start_row: int = 27,
     end_row: int = 27,
     aq_date: datetime = datetime(2007, 9, 14),
     file_type: str = "B80",
 ) -> DatasetReader:
+    # Folder where the Landsat images are located
+    root_path = Path(__file__) / ".." / "data1" / "LS7" / "LS2007"
+
+    # Construct filename from parameters
     filename = "".join(
         [
-            "L7",
+            satellite_number,
             f"{level:01d}",
-            f"{start_path:03d}",
+            f"{path:03d}",
             f"{start_row:03d}",
             "_",
             f"{end_row:03d}",
@@ -30,8 +35,9 @@ def open_landsat_file(
             ".TIF",
         ]
     )
-    path = Path(__file__) / ".." / "data1" / "LS7" / "LS2007" / filename
-    return rasterio.open(path)
+
+    # Open the file with rasterio (only reads header, does not load image data yet)
+    return rasterio.open(root_path / filename)
 
 
 # %%
@@ -49,8 +55,12 @@ Read its image data and plot a subset
 
 import matplotlib.pyplot as plt
 
+row0, row1 = 9800, 11500
+col0, col1 = 6500, 8000
+image_data = band_8_pan.read(1, window=((row0, row1), (col0, col1)))
+
 plt.imshow(
-    band_8_pan.read(1, window=((9800, 11500), (6500, 8000))),
+    band_8_pan.read(1, window=((row0, row1), (col0, col1))),
     cmap="gray",
 )
 
@@ -66,7 +76,7 @@ band_4_nir = open_landsat_file(level=1, file_type="B40")
 band_5_mir1 = open_landsat_file(level=1, file_type="B50")
 band_6_mir2 = open_landsat_file(level=2, file_type="B70")
 
-meta = band_8_pan.meta.copy()
+meta = band_1_bg.meta.copy()
 meta["count"] = 6
 
 # This will take a while
@@ -95,7 +105,7 @@ Plot the subset as panchromatic image
 # convert coordinates to pixel indices from the panchromatic image (x-axis is flipped!)
 row0, col0 = band_8_pan.index(x0, y0)
 row1, col1 = band_8_pan.index(x1, y1)
-window = ((col0, col1), (row1, row0))
+window = ((row1, row0), (col0, col1))
 plt.imshow(band_8_pan.read(1, window=window), cmap="gray")
 
 # %%
@@ -107,7 +117,7 @@ import numpy as np
 # convert coordinates to pixel indices from the multispectral image (x-axis is flipped!)
 row0, col0 = band_1_bg.index(x0, y0)
 row1, col1 = band_1_bg.index(x1, y1)
-window = ((col0, col1), (row1, row0))
+window = ((row1, row0), (col0, col1))
 
 # create an rgb image from BG, G and R bands
 rgb = np.dstack(

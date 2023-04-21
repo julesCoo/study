@@ -327,12 +327,12 @@ def pos_to_grid_index(p):
     return x_index, y_index
 
 
-for p in ground_positions:
+for drone_pos in ground_positions:
     # Determine the grid cell for the current position
-    xi, yi = pos_to_grid_index(p)
+    xi, yi = pos_to_grid_index(drone_pos)
 
     # Add the height to the grid point
-    Z[yi, xi] += p.z
+    Z[yi, xi] += drone_pos.z
     Z_count[yi, xi] += 1
 
 # Calculate the average height for each cell
@@ -362,97 +362,99 @@ import matplotlib.pyplot as plt
 fig = plt.figure(figsize=(10, 10), dpi=300)
 ax = fig.add_subplot(
     projection="3d",
-    elev=30,
-    azim=170,
+    elev=25,
+    azim=160,
     # we have some issues with the contour plot overlapping the wireframe,
     # so we disable the zorder computation
     computed_zorder=False,
+    xlabel="x [m]",
+    ylabel="y [m]",
+    xlim=[-40, 40],
+    ylim=[-40, 40],
+    zticks=[],
 )
-ax.set_xlabel("x [m]")
-ax.set_ylabel("y [m]")
-ax.set_zlabel("z [m]")
 ax.grid(False)
 
+# Draw a contour plot of the heightmap at the xy plane, with colors
+# representing the height. Also add a colorbar.
+cnt = ax.contourf(X, Y, Z, cmap="inferno", zdir="z", offset=0, alpha=0.8)
+fig.colorbar(cnt, ax=ax, shrink=0.5, label="z [m]")
 
-# Draw a contour plot of the heightmap at the xy plane
-ax.contourf(X, Y, Z, cmap="inferno", zdir="z", offset=0, alpha=0.8)
-
-# # Draw a scatter plot of the ground positions
-# ax.scatter(
-#     [p.x for p in ground_positions],
-#     [p.y for p in ground_positions],
-#     [p.z for p in ground_positions],
-#     color="black",
-#     s=0.1,
-#     alpha=0.1,
-# )
-
-# Draw a (ghostly) wireframe of the heightmap on top
+# Draw a (ghostly) wireframe of the building on top of the contour
 ax.plot_wireframe(X, Y, Z, color="black", alpha=0.1)
 
+# Draw the flight path of the drone as dotted line
+ax.plot(
+    [p.x for p in drone_positions],
+    [p.y for p in drone_positions],
+    [p.z for p in drone_positions],
+    color="gray",
+    dashes=[10, 5],
+    linewidth=1,
+    alpha=0.3,
+)
 
-def draw_tachymeter(drone_index=170):
-    # Draw a small tachymeter from 5 points :)
-    tachymeter_center = PositionEpoch(start_date, x=-51.28, y=-4.373, z=1.34)
-    tachymeter_head = tachymeter_center + PositionEpoch(start_date, 0.0, 0.0, 0.5)
-    tachymeter_leg1 = tachymeter_center + PositionEpoch(start_date, -1.0, 0.0, -1.5)
-    tachymeter_leg2 = tachymeter_center + PositionEpoch(start_date, 0.0, 1.0, -1.5)
-    tachymeter_leg3 = tachymeter_center + PositionEpoch(start_date, 0.7, -0.7, -1.5)
-    # draw lines from the center to each of the 4 extremities
-    for pos in [tachymeter_leg1, tachymeter_leg2, tachymeter_leg3, tachymeter_head]:
+# Draw a small sphere at the drone position
+drone_index = 260
+drone_pos = drone_positions[drone_index]
+ax.scatter(
+    drone_pos.x,
+    drone_pos.y,
+    drone_pos.z,
+    color="black",
+    s=10,
+)
+
+# Draw laser lines originating from the drone towards the ground
+ground_positions = []
+xi, yi = pos_to_grid_index(drone_pos)
+for dx in np.arange(-20, 20, 1):
+    for dy in np.arange(-20, 20, 1):
+        ground_pos = grid_index_to_pos(xi + dx, yi + dy)
+        ground_positions.append(ground_pos)
         ax.plot(
-            [tachymeter_center.x, pos.x],
-            [tachymeter_center.y, pos.y],
-            [tachymeter_center.z, pos.z],
-            color="black",
+            [drone_pos.x, ground_pos.x],
+            [drone_pos.y, ground_pos.y],
+            [drone_pos.z, ground_pos.z],
+            color="red",
+            alpha=0.0075,
         )
-    # draw a dotted line from the tachymeter to a drone position
+
+# Then highlight the measured ground positions with red dots
+ax.scatter(
+    [p.x for p in ground_positions],
+    [p.y for p in ground_positions],
+    [p.z for p in ground_positions],
+    color="red",
+    s=0.1,
+    alpha=0.5,
+)
+
+
+# Draw a small tachymeter from 5 points :)
+tachymeter_center = PositionEpoch(start_date, x=-51.28, y=-4.373, z=1.34)
+tachymeter_head = tachymeter_center + PositionEpoch(start_date, 0.0, 0.0, 0.5)
+tachymeter_leg1 = tachymeter_center + PositionEpoch(start_date, -1.0, 0.0, -1.5)
+tachymeter_leg2 = tachymeter_center + PositionEpoch(start_date, 0.0, 1.0, -1.5)
+tachymeter_leg3 = tachymeter_center + PositionEpoch(start_date, 0.7, -0.7, -1.5)
+for pos in [tachymeter_leg1, tachymeter_leg2, tachymeter_leg3, tachymeter_head]:
     ax.plot(
-        [drone_positions[drone_index].x, tachymeter_head.x],
-        [drone_positions[drone_index].y, tachymeter_head.y],
-        [drone_positions[drone_index].z, tachymeter_head.z],
-        color="red",
-        linewidth=1.0,
-        dashes=[2, 4],
+        [tachymeter_center.x, pos.x],
+        [tachymeter_center.y, pos.y],
+        [tachymeter_center.z, pos.z],
+        color="black",
     )
 
+# draw a dotted line from the tachymeter to a drone position
+ax.plot(
+    [drone_pos.x, tachymeter_head.x],
+    [drone_pos.y, tachymeter_head.y],
+    [drone_pos.z, tachymeter_head.z],
+    color="red",
+    linewidth=1.0,
+    dashes=[2, 4],
+)
 
-def draw_drone(drone_index=170):
-    p = drone_positions[drone_index]
-    x, y, z = p.x, p.y, p.z
-
-    # Draw a small sphere at the drone position
-    ax.scatter(x, y, z, color="black", s=10)
-
-    # Draw laser lines from the drone to the ground
-    xi, yi = pos_to_grid_index(p)
-    d = 20
-    for dx in np.arange(-d, d, 1):
-        for dy in np.arange(-d, d, 1):
-            p = grid_index_to_pos(xi + dx, yi + dy)
-            ax.plot(
-                [x, p.x],
-                [y, p.y],
-                [z, p.z],
-                color="#ff000005",
-            )
-
-
-def draw_flight_path():
-    ax.plot(
-        [p.x for p in drone_positions],
-        [p.y for p in drone_positions],
-        [p.z for p in drone_positions],
-        color="gray",
-        dashes=[10, 5],
-        linewidth=1,
-        alpha=0.5,
-    )
-
-
-draw_flight_path()
-draw_tachymeter(240)
-draw_drone(240)
-
+plt.show()
 
 # %%
