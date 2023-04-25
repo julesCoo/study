@@ -1,4 +1,17 @@
 # %%
+import matplotlib.pyplot as plt
+import matplotlib.tri as mtri
+from matplotlib import cm
+import mpl_toolkits.mplot3d as mplot3d
+import meshio
+import numpy as np
+from copy import deepcopy
+from pathlib import Path
+from datetime import datetime, timedelta
+from math import pi, sin, cos
+
+# %%
+
 """
 First we define some classes to represent the measurements we will be working with.
 
@@ -10,14 +23,19 @@ stored as `PolarEpoch` objects.
 Within a cartesic coordinate system, positions are described as `PositionEpoch` objects.
 """
 
-from datetime import datetime, timedelta
-from math import pi, sin, cos
-
 
 class Epoch:
+    """
+    Creates the class Epoch to manage timestamps
+    """
+
     _time: datetime
 
     def __init__(self, time: datetime):
+        """
+        Constructor: Sets time (datetime)
+        :param time: Timestamp of data
+        """
         self.time = time
 
     @property
@@ -50,11 +68,22 @@ class Epoch:
 
 
 class PositionEpoch(Epoch):
+    """
+    Creates class to store Points in cartesian coordinates
+    """
+
     _x: float
     _y: float
     _z: float
 
     def __init__(self, time: datetime, x: float = 0, y: float = 0, z: float = 0):
+        """
+        Constructor: Overwrites time and sets Coordinates
+        :param time: Timestamp of data (datetime)
+        :param x: x Coordinate (float)
+        :param y: y Coordinate (float)
+        :param z: z Coordinate (float)
+        """
         super().__init__(time)
         self.x = x
         self.y = y
@@ -105,6 +134,10 @@ class PositionEpoch(Epoch):
 
 
 class PolarEpoch(Epoch):
+    """
+    Creates class to store Points with 2 angles (zenit, azimuth) and distance
+    """
+
     _distance: float
     _azimuth: float
     _zenith: float
@@ -112,6 +145,13 @@ class PolarEpoch(Epoch):
     def __init__(
         self, time: datetime, azimuth: float = 0, distance: float = 0, zenith: float = 0
     ):
+        """
+        Constructor: Overwrites time and sets distance, zenit and azimut angles
+        :param time: Timestamp of data (datetime)
+        :param azimuth: azimuth angle (float)
+        :param distance: distance (float)
+        :param zenit: zenit angle (float)
+        """
         super().__init__(time)
         self.distance = distance
         self.azimuth = azimuth
@@ -157,7 +197,9 @@ class PolarEpoch(Epoch):
         self._zenith = value
 
     def to_position(self) -> PositionEpoch:
-        """Converts polar coordinates to cartesian coordinates"""
+        """
+        Converts polar coordinates to cartesian coordinates
+        """
         x = self.distance * sin(self.zenith) * cos(self.azimuth)
         y = self.distance * sin(self.zenith) * sin(self.azimuth)
         z = self.distance * cos(self.zenith)
@@ -166,18 +208,21 @@ class PolarEpoch(Epoch):
 
 # %%
 """
-Now we can load the data from the files.
-
-We have to files containing polar epochs.
+Now the data from the files can be read in.
+There are two files containing polar epochs.
 """
-from pathlib import Path
 
 # Time values are given as offset seconds since 2018-03-13 15:10:00
 start_date = datetime(2018, 3, 13, 15, 10, 0)
 
 
 def load_polar_epochs(filename: str) -> list[PolarEpoch]:
+    """
+    Reads .txt files and returns them in a list consisting of instances of the class Polar Epoch.
+    :param filename: Name of the file to be imported
+    """
     polar_epochs = []
+    # File is opend via "read"
     with open(filename, "r") as f:
         for line in f:
             time, distance, zenith, azimuth = line.split(" ")
@@ -192,22 +237,26 @@ def load_polar_epochs(filename: str) -> list[PolarEpoch]:
     return polar_epochs
 
 
-tachy_measurements = load_polar_epochs(Path(__file__) / ".." / "obsTachy.txt")
-laser_measurements = load_polar_epochs(Path(__file__) / ".." / "obsDrone.txt")
+# The two given data sets are read in
+tachy_measurements = load_polar_epochs(Path(__file__).parent / "obsTachy.txt")
+laser_measurements = load_polar_epochs(Path(__file__).parent / "obsDrone.txt")
 
 # %%
 """
-Before working with the data, we need to sort it by time.
+Before working with the data, it needs to be sorted by time.
 
 For this, we write a custom bubblesort function and compare its performance with
 the built-in `Array.sort` function.
 
-To measure the performance, we create a custom Timer class.
+To measure the performance, a custom Timer class is created.
 """
-from copy import deepcopy
 
 
 def bubble_sort(arr: list) -> list:
+    """
+    Sorts a list in ascending order
+    :param arr: List to be sorted
+    """
     n = len(arr)
     for i in range(n):
         for j in range(0, n - i - 1):
@@ -217,21 +266,31 @@ def bubble_sort(arr: list) -> list:
 
 
 class Timer:
+    """
+    Creates a class for measuring the time of a process
+    """
+
     _name: str
     _start: datetime
 
     def __init__(self, name="Unnamed Timer") -> None:
+        """
+        Construktor
+        :param name: Custom name of the Timer
+        """
         self._name = name
 
     def __enter__(self):
+        # Starts the timer
         self._start = datetime.now()
 
     def __exit__(self, *args):
+        # Stops the timer and prints result
         interval = datetime.now() - self._start
         print(f"[{self._name}] Time elapsed: {interval.total_seconds()} s")
 
 
-# Copy the arrays before sorting, so we don't modify the original data
+# Copy the arrays before sorting, so the original data won´t be modified
 arr_copy = deepcopy(tachy_measurements)
 with Timer("bubble_sort"):
     bubble_sort(arr_copy)
@@ -241,14 +300,14 @@ with Timer("list.sort"):
     arr_copy.sort()
 
 # The timer shows that the built-in sort function is much faster than our custom
-# bubblesort function, so we use it to sort our observations.
+# bubblesort function, so it is used to sort the observations.
 tachy_measurements.sort()
 laser_measurements.sort()
 
 # %%
 """
 Now that the observations are sorted, we can begin to combine them into 3d coordinates.
-The drone is moving in a trajectory tracked by the tachymeter, and is performing many 
+The drone is moving in a trajectory tracked by the tachymeter, and is performing many
 laser scanner measurements while in flight.
 
 At each drone position, we expect to find multiple laser scanner measurements.
@@ -297,11 +356,10 @@ while drone_index < len(drone_positions) and laser_index < len(laser_measurement
 # %%
 """
 The `ground_positions` list is a point cloud, which limits the options we have to visualize
-and analyze it. Therefore, we now create a heightmap from it, by pooling all measurements in 
+and analyze it. Therefore, we now create a heightmap from it, by pooling all measurements in
 50x50 cm grid cells and calculating the average height of all measurements in each cell.
 """
 
-import numpy as np
 
 # Extract x and y positions of the ground positions
 x = [p.x for p in ground_positions]
@@ -335,6 +393,7 @@ for drone_pos in ground_positions:
     Z[yi, xi] += drone_pos.z
     Z_count[yi, xi] += 1
 
+
 # Calculate the average height for each cell
 # prevent division by zero first, some cells might not have any measurements
 Z_count[Z_count == 0] = 1
@@ -353,108 +412,204 @@ def grid_index_to_pos(xi, yi):
 
 # %%
 """
-We can now visualize the data in a 3d plot.
+Preparations for visualizations. We will create a series of 3d plots,
+which have a common base configuration.
 """
 
-import matplotlib.pyplot as plt
 
-# Create a 3d scene viewed from a favorable angle
-fig = plt.figure(figsize=(10, 10), dpi=300)
-ax = fig.add_subplot(
-    projection="3d",
-    elev=25,
-    azim=160,
-    # we have some issues with the contour plot overlapping the wireframe,
-    # so we disable the zorder computation
-    computed_zorder=False,
-    xlabel="x [m]",
-    ylabel="y [m]",
-    xlim=[-40, 40],
-    ylim=[-40, 40],
-    zticks=[],
-)
-ax.grid(False)
+class BasePlot:
+    fig: plt.Figure
+    ax: plt.Axes
 
-# Draw a contour plot of the heightmap at the xy plane, with colors
-# representing the height. Also add a colorbar.
-cnt = ax.contourf(X, Y, Z, cmap="inferno", zdir="z", offset=0, alpha=0.8)
-fig.colorbar(cnt, ax=ax, shrink=0.5, label="z [m]")
+    def __init__(self, name: str) -> None:
+        self.name = name
+        pass
 
-# Draw a (ghostly) wireframe of the building on top of the contour
-ax.plot_wireframe(X, Y, Z, color="black", alpha=0.1)
-
-# Draw the flight path of the drone as dotted line
-ax.plot(
-    [p.x for p in drone_positions],
-    [p.y for p in drone_positions],
-    [p.z for p in drone_positions],
-    color="gray",
-    dashes=[10, 5],
-    linewidth=1,
-    alpha=0.3,
-)
-
-# Draw a small sphere at the drone position
-drone_index = 260
-drone_pos = drone_positions[drone_index]
-ax.scatter(
-    drone_pos.x,
-    drone_pos.y,
-    drone_pos.z,
-    color="black",
-    s=10,
-)
-
-# Draw laser lines originating from the drone towards the ground
-ground_positions = []
-xi, yi = pos_to_grid_index(drone_pos)
-for dx in np.arange(-20, 20, 1):
-    for dy in np.arange(-20, 20, 1):
-        ground_pos = grid_index_to_pos(xi + dx, yi + dy)
-        ground_positions.append(ground_pos)
-        ax.plot(
-            [drone_pos.x, ground_pos.x],
-            [drone_pos.y, ground_pos.y],
-            [drone_pos.z, ground_pos.z],
-            color="red",
-            alpha=0.0075,
+    def __enter__(self):
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(
+            projection="3d",
+            elev=15,
+            azim=200,
+            # we have some issues with the contour plot overlapping the wireframe,
+            # so we disable the zorder computation
+            computed_zorder=False,
+            xlabel="x [m]",
+            ylabel="y [m]",
+            zlabel="z [m]",
+            xlim=[-40, 40],
+            ylim=[-40, 40],
+            zlim=[0, 50],
         )
+        # make the grid lines less prominent
+        plt.rcParams["grid.color"] = (0.5, 0.5, 0.5, 0.01)
 
-# Then highlight the measured ground positions with red dots
-ax.scatter(
-    [p.x for p in ground_positions],
-    [p.y for p in ground_positions],
-    [p.z for p in ground_positions],
-    color="red",
-    s=0.1,
-    alpha=0.5,
-)
+        # ensure equal aspect ratio to not deform the model
+        self.ax.set_aspect("equal")
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        plt.savefig(f"{self.name}.png", dpi=400)
+        print(f"Saved {self.name}.png")
+        plt.show()
+        plt.close(self.fig)
 
 
-# Draw a small tachymeter from 5 points :)
-tachymeter_center = PositionEpoch(start_date, x=-51.28, y=-4.373, z=1.34)
-tachymeter_head = tachymeter_center + PositionEpoch(start_date, 0.0, 0.0, 0.5)
-tachymeter_leg1 = tachymeter_center + PositionEpoch(start_date, -1.0, 0.0, -1.5)
-tachymeter_leg2 = tachymeter_center + PositionEpoch(start_date, 0.0, 1.0, -1.5)
-tachymeter_leg3 = tachymeter_center + PositionEpoch(start_date, 0.7, -0.7, -1.5)
-for pos in [tachymeter_leg1, tachymeter_leg2, tachymeter_leg3, tachymeter_head]:
-    ax.plot(
-        [tachymeter_center.x, pos.x],
-        [tachymeter_center.y, pos.y],
-        [tachymeter_center.z, pos.z],
-        color="black",
+# %%
+"""
+3D model of the raw data with surface smoothing:
+"""
+
+with BasePlot("Surface") as plot:
+    # The rstride and cstride parameters are used to show the whole surface.
+    plot.ax.plot_surface(
+        X,
+        Y,
+        Z,
+        cmap=cm.coolwarm,
+        rstride=1,
+        cstride=1,
+    )
+    plot.ax.plot_wireframe(
+        X,
+        Y,
+        Z,
+        color="white",
+        alpha=0.02,
+        cstride=1,
+        rstride=1,
     )
 
-# draw a dotted line from the tachymeter to a drone position
-ax.plot(
-    [drone_pos.x, tachymeter_head.x],
-    [drone_pos.y, tachymeter_head.y],
-    [drone_pos.z, tachymeter_head.z],
-    color="red",
-    linewidth=1.0,
-    dashes=[2, 4],
-)
+# %%
+"""
+3D model as point cloud without gridding
+"""
 
-plt.show()
+with BasePlot("PointCloud") as plot:
+    plot.ax.scatter(
+        [p.x for p in ground_positions],
+        [p.y for p in ground_positions],
+        [p.z for p in ground_positions],
+        c="red",
+        s=0.0001,
+        alpha=1.0,
+    )
+
+# %%
+"""
+3D model with extended features:
+"""
+
+with BasePlot("FeaturePlot") as plot:
+    # Draw a contour plot of the heightmap at the xy plane, with colors
+    # representing the height. Also add a colorbar.
+    cnt = plot.ax.contourf(
+        X,
+        Y,
+        Z,
+        cmap="inferno",
+        zdir="z",
+        offset=0,
+        alpha=0.8,
+    )
+    plot.fig.colorbar(cnt, ax=plot.ax, shrink=0.5, label="z [m]")
+
+    # Draw a (ghostly) wireframe of the building on top of the contour
+    plot.ax.plot_wireframe(
+        X,
+        Y,
+        Z,
+        color="black",
+        alpha=0.05,
+        cstride=1,
+        rstride=1,
+    )
+
+    # Draw the flight path of the drone as dotted line
+    plot.ax.plot(
+        [p.x for p in drone_positions],
+        [p.y for p in drone_positions],
+        [p.z for p in drone_positions],
+        color="gray",
+        dashes=[10, 5],
+        linewidth=1,
+        alpha=0.3,
+    )
+
+    # Draw a small sphere at the drone position
+    drone_index = 290
+    drone_pos = drone_positions[drone_index]
+    plot.ax.scatter(
+        drone_pos.x,
+        drone_pos.y,
+        drone_pos.z,
+        color="black",
+        s=10,
+    )
+
+    # Find the laser scanner measurements from the drone at this position
+    drone_time = drone_positions[drone_index].time
+    for p in ground_positions:
+        if p.time == drone_time:
+            # Draw laser lines originating from the drone towards the ground
+            plot.ax.plot(
+                [drone_pos.x, p.x],
+                [drone_pos.y, p.y],
+                [drone_pos.z, p.z],
+                color="red",
+                alpha=0.0075,
+            )
+            # Then highlight the measured ground positions with red dots
+            plot.ax.scatter(
+                p.x,
+                p.y,
+                p.z,
+                color="red",
+                s=0.1,
+                alpha=0.5,
+            )
+
+    # Draw a small tachymeter from 5 points :)
+    tachymeter_center = PositionEpoch(start_date, x=-51.28, y=-4.373, z=1.34)
+    tachymeter_head = tachymeter_center + PositionEpoch(start_date, 0.0, 0.0, 0.5)
+    tachymeter_leg1 = tachymeter_center + PositionEpoch(start_date, -1.0, 0.0, -1.5)
+    tachymeter_leg2 = tachymeter_center + PositionEpoch(start_date, 0.0, 1.0, -1.5)
+    tachymeter_leg3 = tachymeter_center + PositionEpoch(start_date, 0.7, -0.7, -1.5)
+    for pos in [tachymeter_leg1, tachymeter_leg2, tachymeter_leg3, tachymeter_head]:
+        plot.ax.plot(
+            [tachymeter_center.x, pos.x],
+            [tachymeter_center.y, pos.y],
+            [tachymeter_center.z, pos.z],
+            color="black",
+        )
+
+    # draw a dotted line from the tachymeter to a drone position
+    plot.ax.plot(
+        [drone_pos.x, tachymeter_head.x],
+        [drone_pos.y, tachymeter_head.y],
+        [drone_pos.z, tachymeter_head.z],
+        color="red",
+        linewidth=1.0,
+        dashes=[2, 4],
+    )
+
+# %%
+"""
+Export of the 3D model as STL for 3D-Printing
+"""
+# Creating the surface plot with triangulation (this is the slow part)
+triang = mtri.Triangulation(X.ravel(), Y.ravel())
+
+# Export to STL with meshio
+mesh = meshio.Mesh(
+    points=np.c_[X.ravel(), Y.ravel(), Z.ravel()],
+    cells=[("triangle", triang.triangles)],
+)
+meshio.write("Steyrergasse_30.stl", mesh, file_format="stl")
+
+# Plot the surface to check if it looks good
+with BasePlot("STL_Model") as plot:
+    plot.ax.plot_trisurf(triang, Z.ravel(), cmap="coolwarm")
 
 # %%
