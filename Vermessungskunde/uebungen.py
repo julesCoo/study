@@ -45,13 +45,25 @@ class Angle:
         return cls(gon / 200 * np.pi)
 
     def __repr__(self):
-        return f"{self.gon}g"
+        return f"{self.gon:.5f}g"
 
     def __add__(self, other):
         return Angle(self.rad + other.rad)
 
     def __sub__(self, other):
         return Angle(self.rad - other.rad)
+
+    def sin(self):
+        return np.sin(self.rad)
+
+    def cos(self):
+        return np.cos(self.rad)
+
+    def tan(self):
+        return np.tan(self.rad)
+
+    def cot(self):
+        return 1 / np.tan(self.rad)
 
 
 def rad(x):
@@ -66,8 +78,47 @@ def gon(gon, c=0, cc=0):
     return Angle.from_gon(gon, c, cc)
 
 
-# %% 1 - Gebräuchliche Winkelmaße
+class YX:
+    y: float
+    x: float
 
+    def __init__(self, y: float, x: float):
+        self.y = y
+        self.x = x
+
+    def to_polar(self):
+        s = np.sqrt(self.y**2 + self.x**2)
+        t = rad(np.arctan2(self.y, self.x))
+        return Polar(s, t)
+
+    def __str__(self) -> str:
+        return f"YX(y={self.y}m, x={self.x}m)"
+
+    def __add__(self, other):
+        return YX(self.y + other.y, self.x + other.x)
+
+    def __sub__(self, other):
+        return YX(self.y - other.y, self.x - other.x)
+
+
+class Polar:
+    dist: float
+    azimuth: Angle
+
+    def __init__(self, dist: float, azimuth: Angle):
+        self.dist = dist
+        self.azimuth = azimuth
+
+    def to_yx(self):
+        y = self.dist * np.sin(self.azimuth)
+        x = self.dist * np.cos(self.azimuth)
+        return YX(y, x)
+
+    def __str__(self) -> str:
+        return f"Polar({self.dist:.5f}m, {self.azimuth})"
+
+
+# %% 1 - Gebräuchliche Winkelmaße
 w1 = deg(124, 30, 30)
 w2 = gon(124, 30, 30)
 
@@ -100,55 +151,59 @@ print(f"{d1-d2=} m")
 
 
 # %% 5 - Umrechnung zwischen Polarkoordinaten und rechtwinkeligen Koordinaten
-def yx_to_polar(y: float, x: float):
-    s = (x**2 + y**2) ** 0.5
-    t = np.atan2(y, x)
-    return s, t
+print(Polar(201.344, gon(381.720)).to_yx())
 
+# %% 6- Teilkreisorientierung
+P10 = YX(-66182.18, 5215829.07)
+P11 = YX(-66182.18, 5215834.07)
+P14 = YX(-66136.44, 5215849.28)
+P71 = YX(-66501.20, 5215444.07)
 
-def polar_to_yx(s: float, t: Angle):
-    x = s * np.cos(t.rad)
-    y = s * np.sin(t.rad)
-    return x, y
+print("10->11", P11 - P10)
+print("10->14", P14 - P10)
+print("10->71", P71 - P10)
 
+# Oriented angles from P10 (Theodolite) to P11, P14, P71
+a_10_11 = (P11 - P10).to_polar().azimuth
+a_10_14 = (P14 - P10).to_polar().azimuth
+a_10_71 = (P71 - P10).to_polar().azimuth
+print("a(10->11)", a_10_11)
+print("a(10->14)", a_10_14)
+print("a(10->71)", a_10_71)
 
-AB = (201.344, gon(381.720))
-y, x = polar_to_yx(*AB)
-print(f"{y=} m")
-print(f"{x=} m")
-
-
-# %% Teilkreisorientierung
-YX = namedtuple("YX", "y x")
-Polar = namedtuple("Polar", "s t")
-
-
-def azimuth_between(p1: YX, p2: YX):
-    dy = p2.y - p1.y
-    dx = p2.x - p1.x
-    return rad(np.arctan2(dy, dx))
-
-
-# (y,x)
-P10 = (-66182.18, 5215829.07)
-P11 = (-66182.18, 5215834.07)
-P14 = (-66136.44, 5215849.28)
-P71 = (-66501.20, 5215444.07)
-
+# Unoriented angles
 r_10_11 = gon(204.7964)
 r_10_14 = gon(278.3129)
 r_10_71 = gon(48.8534)
 
-a_10_11 = azimuth_between(P10, P11)
-a_10_14 = azimuth_between(P10, P14)
-a_10_71 = azimuth_between(P10, P71)
 
 print(
-    r_10_11 - a_10_11,
-    r_10_14 - a_10_14,
-    r_10_71 - a_10_71,
+    a_10_11 - r_10_11,
+    a_10_14 - r_10_14,
+    a_10_71 - r_10_71,
 )
 
+# %% 7 - Abschätzung: Auswirkung von Koordinatenfehlern
+dx = 0.5
+dy = 0.5
+
+
+def d_phi(yx: YX):
+    x = yx.x
+    y = yx.y
+    return rad(abs(x / (x**2 + y**2) * dy - y / (x**2 + y**2) * dx))
+
+
+print(d_phi(P11 - P10))
+print(d_phi(P14 - P10))
+print(d_phi(P71 - P10))
+
+# %% 8 - Polarpunktberechnung
+
+NA = P10 + Polar(172.081, gon(87.8787)).to_yx()
+NB = P10 + Polar(19.994, gon(207.4406)).to_yx()
+print(NA)
+print(NB)
 
 # %% Trigonometrische Höhenübertragung
 
