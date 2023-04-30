@@ -1,123 +1,3 @@
-# %%
-from collections import namedtuple
-import numpy as np
-import matplotlib.pyplot as plt
-
-
-# Universal Angle converter
-class Angle:
-    rad: float
-    deg: float
-    gon: float
-    dms: tuple[int, int, float]
-    gonccc: tuple[int, int, float]
-
-    def __init__(self, rad: float):
-        while rad > 2 * np.pi:
-            rad -= 2 * np.pi
-        while rad < 0:
-            rad += 2 * np.pi
-
-        self.rad = rad
-        self.deg = rad / np.pi * 180
-        self.gon = rad / np.pi * 200
-
-        deg = int(self.deg)
-        min = int((self.deg - deg) * 60)
-        sec = (self.deg - deg - min / 60) * 3600
-        self.dms = (deg, min, sec)
-
-        gon = int(self.gon)
-        c = int((self.gon - gon) * 100)
-        cc = (self.gon - gon - c / 100) * 10000
-        self.gonccc = (gon, c, cc)
-
-    @classmethod
-    def from_deg(cls, deg, min, sec):
-        deg += min / 60
-        deg += sec / 3600
-        return cls(deg / 180 * np.pi)
-
-    @classmethod
-    def from_gon(cls, gon, c, cc):
-        gon += c / 100
-        gon += cc / 10000
-        return cls(gon / 200 * np.pi)
-
-    def __repr__(self):
-        return f"{self.gon:.5f}g"
-
-    def __add__(self, other):
-        return Angle(self.rad + other.rad)
-
-    def __sub__(self, other):
-        return Angle(self.rad - other.rad)
-
-    def sin(self):
-        return np.sin(self.rad)
-
-    def cos(self):
-        return np.cos(self.rad)
-
-    def tan(self):
-        return np.tan(self.rad)
-
-    def cot(self):
-        return 1 / np.tan(self.rad)
-
-
-def rad(x):
-    return Angle(x)
-
-
-def deg(deg, min=0, sec=0):
-    return Angle.from_deg(deg, min, sec)
-
-
-def gon(gon, c=0, cc=0):
-    return Angle.from_gon(gon, c, cc)
-
-
-class YX:
-    y: float
-    x: float
-
-    def __init__(self, y: float, x: float):
-        self.y = y
-        self.x = x
-
-    def to_polar(self):
-        s = np.sqrt(self.y**2 + self.x**2)
-        t = rad(np.arctan2(self.y, self.x))
-        return Polar(s, t)
-
-    def __str__(self) -> str:
-        return f"YX(y={self.y}m, x={self.x}m)"
-
-    def __add__(self, other):
-        return YX(self.y + other.y, self.x + other.x)
-
-    def __sub__(self, other):
-        return YX(self.y - other.y, self.x - other.x)
-
-
-class Polar:
-    dist: float
-    azimuth: Angle
-
-    def __init__(self, dist: float, azimuth: Angle):
-        self.dist = dist
-        self.azimuth = azimuth
-
-    def to_yx(self):
-        y = self.dist * np.sin(self.azimuth)
-        x = self.dist * np.cos(self.azimuth)
-        return YX(y, x)
-
-    def __str__(self) -> str:
-        return f"Polar({self.dist:.5f}m, {self.azimuth})"
-
-
 # %% 1 - Gebräuchliche Winkelmaße
 w1 = deg(124, 30, 30)
 w2 = gon(124, 30, 30)
@@ -128,7 +8,7 @@ print(w2.rad, w2.deg, w2.dms, w2.gon, w2.gonccc)
 # %%  2 - Abschätzung: Vertikalwinkelmessung
 s = 50
 a = gon(0.7 * 1e-3)
-h = s * np.tan(a.rad)
+h = s * tan(a.rad)
 print(h * 1000, "mm")
 
 # %% - 3 - Abschätzung: Nivellement aus der Mitte
@@ -212,33 +92,204 @@ s = 100
 ds = 5e-3
 
 # Zenitwinkel (in gon)
-z = 50
-dz = 2e-3
+z = gon(50)
+dz = gon(2e-3)
 
 # Differentiale
-df_ds = gcot(z)
-df_dz = -s / (gsin(z) ** 2)
+df_ds = z.cot()
+df_dz = -s / (z.sin() ** 2)
 
 # Totales Differential
-dh = df_ds * ds + df_dz * dz
+dh = abs(df_ds * ds) + abs(df_dz * dz.rad)
 
 # Varianzfortpflanzung
-sh = np.sqrt(df_ds**2 * ds**2 + df_dz**2 * dz**2)
-print(dh, sh, sh**2)
+sh = sqrt(df_ds**2 * ds**2 + df_dz**2 * dz.rad**2)
+print("dh=", dh * 1000, "mm")
+print("sh=", sh * 1000, "mm")
 # %%
 
 
 s = np.linspace(0, 100, 100)
 z = np.linspace(50, 150, 100)
 s, z = np.meshgrid(s, z)
-df_ds = gcot(z)
-df_dz = -s / (gsin(z) ** 2)
-sh = np.sqrt(df_ds**2 * ds**2 + df_dz**2 * dz**2)
+df_ds = 1 / tan(z)
+df_dz = -s / (sin(z) ** 2)
+sh = sqrt(df_ds**2 * ds**2 + df_dz**2 * dz.rad**2)
 
 plt.xlabel("s [m]")
 plt.ylabel("$\\zeta$ [gon]")
 cnt = plt.contourf(s, z, sh)
 plt.colorbar(cnt, label="$s_h$ [m]")
 plt.savefig("Varianzfortpflanzung.png")
+
+# %% 13 - Varianzfortpflanzung bei Koordinatenrechnung
+
+t = gon(381.720).rad
+st = gon(1.5e-3).rad
+
+s = 201.344
+ss = 5e-3
+
+sx = sqrt(sin(t) ** 2 * ss**2 + (s * cos(t)) ** 2 * st**2)
+sy = sqrt(cos(t) ** 2 * ss**2 + (-s * sin(t)) ** 2 * st**2)
+print("sx=", sx * 1000, "mm", "sy=", sy * 1000, "mm")
+
+# %% 14 - Teilkreisorientierung
+
+y = 0
+y = 45.74
+y = -319.02
+sy = sqrt(2) * 0.01
+
+x = 5
+x = 21.01
+x = -385.0
+sx = sqrt(2) * 0.01
+
+# R = gon(278.3129).rad
+sR = gon(1e-3).rad
+
+sO = sqrt(
+    (x / (x**2 + y**2)) ** 2 * sy**2
+    + (-y / (x**2 + y**2)) ** 2 * sx**2
+    + (-1) ** 2 * sR**2
+)
+print(gon(sO).gon * 1000, "mgon")
+
+# %% 15 - Polarpunktberechnung
+
+d = 172.081
+d = 19.994
+sd = 5e-3
+
+R = gon(87.8787).rad
+R = gon(207.4406).rad
+sR = gon(1e-3).rad
+
+sx10 = 0.01
+sy10 = 0.01
+
+sy = sqrt(sin(R) ** 2 * sd**2 + (d * cos(R)) ** 2 * sR**2 + sy10**2)
+sx = sqrt(cos(R) ** 2 * sd**2 + (-d * sin(R)) ** 2 * sR**2 + sx10**2)
+print("sx=", sx * 1000, "mm", "sy=", sy * 1000, "mm")
+
+# %% 16 - Allgemeiner Richtungsschnitt
+from importlib import reload
+import lib
+
+reload(lib)
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from lib import YX, Polar, gon, to_gon, vws
+
+p_130 = YX(-60751, 5207637)  # Anfangspunkt
+p_136 = YX(-61001, 5208713)  # Endpunkt
+p_1 = YX(-60176, 5207125)  # Kirche Matrei
+p_14 = YX(-59252, 5212812)  # Nüssingkogel
+
+R_130_to_1 = gon(144.314)
+R_130_to_14 = gon(15.949)
+R_130_to_unknown = gon(42.715)
+R_136_to_1 = gon(166.497)
+R_136_to_14 = gon(22.675)
+R_136_to_unknown = gon(60.936)
+
+O_130 = np.mean(
+    [
+        p_130.polar_to(p_1).t - R_130_to_1,
+        p_130.polar_to(p_14).t - R_130_to_14,
+    ]
+)
+
+O_136 = np.mean(
+    [
+        p_136.polar_to(p_1).t - R_136_to_1,
+        p_136.polar_to(p_14).t - R_136_to_14,
+    ]
+)
+
+p_unknown = vws(
+    p_130,
+    p_136,
+    O_130 + R_130_to_unknown,
+    O_136 + R_136_to_unknown,
+)
+
+print(to_gon(O_130 + R_130_to_unknown))
+print(to_gon(O_136 + R_136_to_unknown))
+
+
+p_1.plot("1-152")
+p_14.plot("14-152")
+p_unknown.plot("unknown")
+
+p_130.plot("130-152", color="red")
+p_130.plot_to(p_1, color="red")
+p_130.plot_to(p_14, color="red")
+p_130.plot_to(p_unknown, color="red")
+
+p_136.plot("136-152", color="green")
+p_136.plot_to(p_1, color="green")
+p_136.plot_to(p_14, color="green")
+p_136.plot_to(p_unknown, color="green")
+
+print("O_130=", to_gon(O_130), "gon")
+print("O_136=", to_gon(O_136), "gon")
+print(p_unknown)
+
+plt.ticklabel_format(useOffset=True, style="plain", axis="both")
+plt.ylabel("x [m]")
+plt.xlabel("y [m]")
+plt.subplots_adjust(left=0.15, right=0.9, top=0.9, bottom=0.1)
+plt.savefig("AllgemeinerRichtungsschnitt.png")
+
+# %% 17 - Nivelliertest
+import numpy as np
+
+meas_back = np.array(
+    [1.767, 1.691, 1.734, 1.722, 1.759, 1.753, 1.722, 1.675, 1.756, 1.718]
+)
+meas_front = np.array(
+    [1.275, 1.200, 1.235, 1.228, 1.265, 1.252, 1.219, 1.180, 1.256, 1.222]
+)
+
+diff = meas_front - meas_back
+mean = np.mean(diff)
+std = np.std(diff, ddof=1)
+print("mean=", mean, "m")
+print("std=", std * 1000, "mm")
+
+# %% 18 - Gruppenweise Mittelbildung (gewichtetes Mittel)
+
+mean_back = np.mean(meas_back)
+std_back = np.std(meas_back, ddof=1)
+mean_front = np.mean(meas_front)
+std_front = np.std(meas_front, ddof=1)
+
+mean = mean_front - mean_back
+std = np.sqrt(std_back**2 + std_front**2)
+
+print("mean(front)= ", mean_front, "m")
+print("std(front)= ", std_front * 1000, "mm")
+
+print("mean(back)= ", mean_back, "m")
+print("std(back)= ", std_back * 1000, "mm")
+
+print("mean=", mean, "m")
+print("std=", std * 1000, "mm")
+
+for i in range(10):
+    left = (-30, meas_back[i])
+    right = (30, meas_front[i])
+    c = plt.get_cmap("tab10")(i)
+    plt.scatter(left[0], left[1], c=c)
+    plt.scatter(right[0], right[1], c=c)
+    plt.plot([left[0], right[0]], [left[1], right[1]], c=c)
+
+plt.xlabel("Distanz [m]")
+plt.ylabel("Höhe [m]")
+plt.savefig("GruppenweiseMittelbildung.png")
 
 # %%
