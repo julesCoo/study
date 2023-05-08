@@ -292,4 +292,154 @@ plt.xlabel("Distanz [m]")
 plt.ylabel("Höhe [m]")
 plt.savefig("GruppenweiseMittelbildung.png")
 
+# %% 19 - Ebene Ähnlichkeitstransformation
+from lib import YX, CoordinateTransform, to_gon
+import numpy as np
+
+P1 = YX(12092.718, 5349728.001)
+P2 = YX(14829.446, 5350182.777)
+
+P1_ = YX(55.486, -15.817)
+P2_ = YX(-1245.821, -2466.024)
+P3_ = YX(-595.168, -1240.921)
+
+# Koordinate Differences
+y1, x1 = P1
+y2, x2 = P2
+eta1, xi1 = P1_
+eta2, xi2 = P2_
+eta3, xi3 = P3_
+
+dy = y2 - y1
+dx = x2 - x1
+deta = eta2 - eta1
+dxi = xi2 - xi1
+
+d = np.sqrt(dy**2 + dx**2)
+d_ = np.sqrt(deta**2 + dxi**2)
+mu = d / d_
+
+t = np.arctan2(dy, dx)
+t_ = np.arctan2(deta, dxi)
+phi = t_ - t
+phi_g = to_gon(phi) % 400
+
+y0 = y1 - mu * eta1 * np.cos(phi) + mu * xi1 * np.sin(phi)
+x0 = x1 - mu * eta1 * np.sin(phi) - mu * xi1 * np.cos(phi)
+print(y0, x0)
+y0 = y2 - mu * eta2 * np.cos(phi) + mu * xi2 * np.sin(phi)
+x0 = x2 - mu * eta2 * np.sin(phi) - mu * xi2 * np.cos(phi)
+print(y0, x0)
+
+y3 = mu * eta3 * np.cos(phi) - mu * xi3 * np.sin(phi) + y0
+x3 = mu * eta3 * np.sin(phi) + mu * xi3 * np.cos(phi) + x0
+print(y3, x3)
+
+s_x = s_y = s_xy = 0.005
+s_eta = s_xi = s_etaxi = 0.001
+s_dxy = np.sqrt(2) * s_xy
+s_detaxi = np.sqrt(2) * s_etaxi
+s_d = s_dxy
+s_d_ = s_detaxi
+
+s_mu = np.sqrt((1 / d_) ** 2 * s_d**2 + (d / d_**2) ** 2 * s_d_**2)
+s_t = 1 / d * s_dxy
+s_t_ = 1 / d_ * s_detaxi
+s_phi = np.sqrt(s_t**2 + s_t_**2)
+
+eta, xi = eta2, xi2
+s_y0 = np.sqrt(
+    1**2 * s_y**2
+    + (-eta * np.cos(phi) + xi * np.sin(phi)) ** 2 * s_mu**2
+    + (-mu * np.cos(phi)) * s_eta**2
+    + (mu * np.sin(phi)) * s_xi**2
+    + (mu * eta * np.sin(phi) + mu * xi * np.cos(phi)) ** 2 * s_phi**2
+)
+s_x0 = np.sqrt(
+    1**2 * s_x**2
+    + (-eta * np.sin(phi) - xi * np.cos(phi)) ** 2 * s_mu**2
+    + (-mu * np.sin(phi)) * s_eta**2
+    + (-mu * np.cos(phi)) * s_xi**2
+    + (-mu * eta * np.cos(phi) + mu * xi * np.sin(phi)) ** 2 * s_phi**2
+)
+
+# %% 22 - Orthogonalaufnahme
+import numpy as np
+import matplotlib.pyplot as plt
+from lib import YX
+
+P1 = YX(19.93, -52.17)
+P2 = YX(51.40, 15.66)
+
+dA, lA = (2.18, 5.21)
+dB, lB = (3.64, 7.19)
+dC, lC = (1.71, 9.04)
+
+vec_line = (P2 - P1).normalize()
+vec_ortho = YX(vec_line.x, -vec_line.y)
+
+fpA = P1 + lA * vec_line
+PA = fpA + dA * vec_ortho
+
+fpB = P1 + lB * vec_line
+PB = fpB + dB * vec_ortho
+
+fpC = P1 + lC * vec_line
+PC = fpC + dC * vec_ortho
+
+plt.figure(figsize=(4, 8))
+plt.axis("equal")
+plt.xlabel("Y [m]")
+plt.ylabel("X [m]")
+
+P1.plot()
+P2.plot()
+P1.plot_to(P2)
+
+fpA.plot_to(PA)
+PA.plot(marker="+", label="A")
+fpB.plot_to(PB)
+PB.plot(marker="+", label="B")
+fpC.plot_to(PC)
+PC.plot(marker="+", label="C")
+
+# %% 23 - Freie Stationierung
+from lib import YX, Polar, bgs, gon, to_gon
+import numpy as np
+import matplotlib.pyplot as plt
+
+PP1 = YX(-48934.585, 255724.471)
+PP2 = YX(-48928.588, 255821.571)
+
+s_1000_PP1 = 44.280
+s_1000_PP2 = 53.172
+s_1000_N = 60.721
+
+r_1000_PP1 = gon(15.9390)
+r_1000_PP2 = gon(223.2140)
+r_1000_N = gon(398.6191)
+
+a_1000_PP1_PP2 = to_gon(r_1000_PP2 - r_1000_PP1)
+# P1000 = bgs(PP1, PP2, s_1000_PP1, s_1000_PP2)
+P1000 = bgs(PP2, PP1, s_1000_PP2, s_1000_PP1)
+O1000 = P1000.polar_to(PP1).t - r_1000_PP1
+O1000_g = to_gon(O1000)
+
+P1000_O = P1000 + Polar(100, O1000)
+N = P1000 + Polar(s_1000_N, O1000 + r_1000_N)
+
+plt.figure(figsize=(2, 6))
+plt.xlabel("Y [m]")
+plt.ylabel("X [m]")
+plt.axis("equal")
+PP1.plot(label="PP1")
+PP2.plot(label="PP2")
+P1000.plot(label="P1000")
+P1000.plot_to(PP1)
+P1000.plot_to(PP2)
+P1000.plot_to(P1000_O, linestyle="--", linewidth=0.5)
+P1000.plot_to(N)
+N.plot(marker="o", label="N")
+
+
 # %%

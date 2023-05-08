@@ -1,5 +1,5 @@
-from typing import Union
-from numpy import pi, sin, cos, sqrt, arctan2
+from typing import Tuple, Union
+from numpy import pi, sin, cos, sqrt, arctan2, linalg, arccos, arctan
 
 # %%
 """Angles"""
@@ -64,13 +64,40 @@ class YX:
             other = other.to_yx()
         return YX(self.y + other.y, self.x + other.x)
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> "YX":
         return YX(self.y - other.y, self.x - other.x)
+
+    def __mul__(self, other: float) -> "YX":
+        return YX(self.y * other, self.x * other)
+
+    def __rmul__(self, other: float) -> "YX":
+        return self * other
+
+    def __truediv__(self, other: float) -> "YX":
+        return YX(self.y / other, self.x / other)
+
+    def __neg__(self) -> "YX":
+        return YX(-self.y, -self.x)
+
+    def length(self) -> float:
+        return sqrt(self.y**2 + self.x**2)
+
+    def normalize(self) -> "YX":
+        return self / self.length()
+
+    def rotate(self, angle: float) -> "YX":
+        return YX(
+            -self.x * sin(angle) + self.y * cos(angle),
+            self.x * cos(angle) + self.y * sin(angle),
+        )
 
     def to_polar(self):
         s = sqrt(self.y**2 + self.x**2)
         t = arctan2(self.y, self.x)
         return Polar(s, t)
+
+    def polar_to(self, other: "YX"):
+        return (other - self).to_polar()
 
     def plot(self, label="", **kwargs):
         if "marker" not in kwargs:
@@ -87,9 +114,6 @@ class YX:
             kwargs["color"] = "black"
 
         plt.plot([self.y, other.y], [self.x, other.x], **kwargs)
-
-    def polar_to(self, other: "YX"):
-        return (other - self).to_polar()
 
 
 class Polar:
@@ -116,12 +140,91 @@ class Polar:
 """Coordinate Calculations"""
 
 
+def Halbwinkelsatz(
+    a: float,
+    b: float,
+    c: float,
+):
+    s = (a + b + c) / 2
+    alpha = 2 * arctan(sqrt((s - b) * (s - c) / (s * (s - a))))
+    beta = 2 * arctan(sqrt((s - c) * (s - a) / (s * (s - b))))
+    gamma = 2 * arctan(sqrt((s - a) * (s - b) / (s * (s - c))))
+    return alpha, beta, gamma
+
+
 def vws(p1: YX, p2: YX, t13: float, t23: float) -> YX:
     "Vorwärtsschnitt mit orientierten Richtungen"
 
-    d12, t12 = p1.polar_to(p2)
-    d13 = d12 * sin(t23 - t12) / sin(t23 - t13)
-    return p1 + Polar(d13, t13)
+    s12, t12 = p1.polar_to(p2)
+    s13 = s12 * sin(t23 - t12) / sin(t23 - t13)
+    return p1 + Polar(s13, t13)
+
+
+def bgs(p1: YX, p2: YX, s13: float, s23: float) -> YX:
+    "Bogenschnitt"
+
+    s12, t12 = p1.polar_to(p2)
+    alpha, _, _ = Halbwinkelsatz(s23, s13, s12)
+    t13 = t12 + alpha
+    return p1 + Polar(s13, t13)
+
+
+class CoordinateTransform:
+    "Transforms coordinates from one coordinate system (A) to another (B)"
+
+    scale: float
+    rotation: float
+    translation: YX
+
+    def __init__(
+        self,
+        scale: float = 1,
+        rotation: float = 0,
+        translation: YX = YX(0, 0),
+    ):
+        self.scale = scale
+        self.rotation = rotation
+        self.translation = translation
+
+    def __repr__(self) -> str:
+        return f"CoordinateTransform(scale={self.scale}, rotate={to_gon(self.rotation)} gon, translate={self.translation})"
+
+    def transform(self, point: YX) -> YX:
+        return (point * self.scale).rotate(self.rotation) + self.translation
+
+    @classmethod
+    def helmert(
+        cls,
+        from_points: Tuple[YX, YX],
+        to_points: Tuple[YX, YX],
+    ) -> "CoordinateTransform":
+        y1, x1 = from_points[0]
+        y2, x2 = from_points[1]
+
+        y1_, x1_ = to_points[0]
+        y2_, x2_ = to_points[1]
+
+        a, b, c, d = linalg.lstsq(
+            [
+                [x1, y1, 1, 0],
+                [x2, y2, 1, 0],
+                [y1, -x1, 0, 1],
+                [y2, -x2, 0, 1],
+            ],
+            [
+                x1_,
+                x2_,
+                y1_,
+                y2_,
+            ],
+            rcond=None,
+        )[0]
+
+        return CoordinateTransform(
+            scale=sqrt(a**2 + b**2),
+            rotation=arctan2(b, a),
+            translation=YX(d, c),
+        )
 
 
 # %%
