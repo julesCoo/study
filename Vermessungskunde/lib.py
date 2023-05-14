@@ -91,7 +91,7 @@ class YX:
             self.x * cos(angle) + self.y * sin(angle),
         )
 
-    def to_polar(self):
+    def to_polar(self) -> "Polar":
         s = sqrt(self.y**2 + self.x**2)
         t = arctan2(self.y, self.x)
         return Polar(s, t)
@@ -135,6 +135,9 @@ class Polar:
     def __iter__(self):
         return iter([self.d, self.t])
 
+    def with_length(self, d: float):
+        return Polar(d, self.t)
+
 
 # %%
 """Coordinate Calculations"""
@@ -155,18 +158,71 @@ def Halbwinkelsatz(
 def vws(p1: YX, p2: YX, t13: float, t23: float) -> YX:
     "Vorwärtsschnitt mit orientierten Richtungen"
 
+    d12, t12 = p1.polar_to(p2)
+    d13 = d12 * sin(t23 - t12) / sin(t23 - t13)
+    return p1 + Polar(d13, t13)
+
+
+def vws2(p1: YX, p2: YX, alpha: float, beta: float) -> YX:
+    "Vorwärtsschnitt mit unorientierten Winkeln"
+
     s12, t12 = p1.polar_to(p2)
-    s13 = s12 * sin(t23 - t12) / sin(t23 - t13)
-    return p1 + Polar(s13, t13)
+    d13 = s12 * sin(beta) / sin(alpha + beta)
+    vAC = t12 + alpha
+    return p1 + Polar(d13, vAC)
 
 
-def bgs(p1: YX, p2: YX, s13: float, s23: float) -> YX:
+def bgs(p1: YX, p2: YX, d13: float, d23: float) -> YX:
     "Bogenschnitt"
 
     s12, t12 = p1.polar_to(p2)
-    alpha, _, _ = Halbwinkelsatz(s23, s13, s12)
+    alpha, _, _ = Halbwinkelsatz(d23, d13, s12)
     t13 = t12 + alpha
-    return p1 + Polar(s13, t13)
+    return p1 + Polar(d13, t13)
+
+
+def rws(
+    L: YX,
+    M: YX,
+    R: YX,
+    tNL: float,
+    tNM: float,
+    tNR: float,
+    collins=True,
+) -> YX:
+    "Rückwärtsschnitt"
+    alpha = tNM - tNL
+    beta = tNR - tNM
+
+    dML, tML = M.polar_to(L)
+    dMR, tMR = M.polar_to(R)
+
+    if collins:
+        H = vws2(R, L, alpha, beta)
+        _, tHL = H.polar_to(L)
+        _, tHM = H.polar_to(M)
+        _, tHR = H.polar_to(R)
+
+        gamma = tHM - tHR
+        delta = tHL - tHM
+
+        return vws2(L, R, gamma, delta)
+    else:
+        a = sin(alpha) / dML
+        b = sin(-beta) / dMR
+
+        va = tMR - beta
+        vb = tML + alpha
+        base = sin(tML - tMR + alpha + beta)
+        gamma = (a * cos(va) - b * cos(vb)) / base
+        mu = (a * sin(va) - b * sin(vb)) / base
+
+        sMN_sq = 1 / (gamma**2 + mu**2)
+
+        return YX(
+            M.y + sMN_sq * mu,
+            M.x + sMN_sq * gamma,
+        )
 
 
 class CoordinateTransform:

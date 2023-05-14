@@ -6,9 +6,9 @@ print(w1.rad, w1.deg, w1.dms, w1.gon, w1.gonccc)
 print(w2.rad, w2.deg, w2.dms, w2.gon, w2.gonccc)
 
 # %%  2 - Abschätzung: Vertikalwinkelmessung
-s = 50
+e = 50
 a = gon(0.7 * 1e-3)
-h = s * tan(a.rad)
+h = e * tan(a.rad)
 print(h * 1000, "mm")
 
 # %% - 3 - Abschätzung: Nivellement aus der Mitte
@@ -88,7 +88,7 @@ print(NB)
 # %% Trigonometrische Höhenübertragung
 
 # Horizontale Distanz vom Theodoliten zum Messpunkt (in m)
-s = 100
+e = 100
 ds = 5e-3
 
 # Zenitwinkel (in gon)
@@ -97,7 +97,7 @@ dz = gon(2e-3)
 
 # Differentiale
 df_ds = z.cot()
-df_dz = -s / (z.sin() ** 2)
+df_dz = -e / (z.sin() ** 2)
 
 # Totales Differential
 dh = abs(df_ds * ds) + abs(df_dz * dz.rad)
@@ -109,29 +109,29 @@ print("sh=", sh * 1000, "mm")
 # %%
 
 
-s = np.linspace(0, 100, 100)
+e = np.linspace(0, 100, 100)
 z = np.linspace(50, 150, 100)
-s, z = np.meshgrid(s, z)
+e, z = np.meshgrid(e, z)
 df_ds = 1 / tan(z)
-df_dz = -s / (sin(z) ** 2)
+df_dz = -e / (sin(z) ** 2)
 sh = sqrt(df_ds**2 * ds**2 + df_dz**2 * dz.rad**2)
 
 plt.xlabel("s [m]")
 plt.ylabel("$\\zeta$ [gon]")
-cnt = plt.contourf(s, z, sh)
+cnt = plt.contourf(e, z, sh)
 plt.colorbar(cnt, label="$s_h$ [m]")
 plt.savefig("Varianzfortpflanzung.png")
 
 # %% 13 - Varianzfortpflanzung bei Koordinatenrechnung
 
 t = gon(381.720).rad
-st = gon(1.5e-3).rad
+sigma_t = gon(1.5e-3).rad
 
-s = 201.344
+e = 201.344
 ss = 5e-3
 
-sx = sqrt(sin(t) ** 2 * ss**2 + (s * cos(t)) ** 2 * st**2)
-sy = sqrt(cos(t) ** 2 * ss**2 + (-s * sin(t)) ** 2 * st**2)
+sx = sqrt(sin(t) ** 2 * ss**2 + (e * cos(t)) ** 2 * sigma_t**2)
+sy = sqrt(cos(t) ** 2 * ss**2 + (-e * sin(t)) ** 2 * sigma_t**2)
 print("sx=", sx * 1000, "mm", "sy=", sy * 1000, "mm")
 
 # %% 14 - Teilkreisorientierung
@@ -441,5 +441,179 @@ P1000.plot_to(P1000_O, linestyle="--", linewidth=0.5)
 P1000.plot_to(N)
 N.plot(marker="o", label="N")
 
+
+# %% Streckenreduktion (atmosphärische Reduktion)
+
+e = 978.125
+t = 25
+p = 870
+
+ds = (282.2 - (0.2908 * p) / (1 + 0.00366 * t)) * e * 10**-6
+s_red = e + ds
+print(ds)
+print(s_red)
+
+# %% Streckenreduktion (atmosphärische Reduktion)
+import sympy as sp
+
+# first we have to create the symbols we want to use in the equation
+e, t, p, sigma_t, sigma_p = sp.symbols("s, t, p, sigma_t, sigma_p")
+
+# then we can define the equation using the symbols
+s_red = e + (282.2 - (0.2908 * p) / (1 + 0.00366 * t)) * e * 10**-6
+
+# for the variance calculation, we have to partially derive the equation
+# with respect to the variables (only t and p have variance).
+s_red_t = sp.diff(s_red, t)
+s_red_p = sp.diff(s_red, p)
+
+# the total variance is then calculated using the partial derivatives
+# and the variances of the variables.
+sigma_s_red = sp.sqrt(s_red_t**2 * sigma_t**2 + s_red_p**2 * sigma_p**2)
+
+# sigma_s_red is now a somewhat complicated function of s, t and p.
+# we can substitute these symbols for their actual values to get the
+# numerical value of the variance.
+sigma_s_red = sigma_s_red.subs(
+    {
+        e: 978.125,
+        t: 25,
+        sigma_t: 2,
+        p: 870,
+        sigma_p: 5,
+    }
+)
+
+print(sigma_s_red, "m")
+
+
+# %% 25 - Streckenreduktion (geometrische Reduktion)
+import sympy as sp
+
+H, R, e = sp.symbols("H, R, s")
+sigma_H, sigma_e = sp.symbols("sigma_H, sigma_e")
+
+e = (1 - (H / R)) * e
+e_H = sp.diff(e, H)
+
+f = sp.Eq(sigma_e, sp.sqrt(e_H**2 * sigma_H**2))
+f_H = sp.solve(f, sigma_H)[0]
+f_H.subs({e: 100, sigma_e: 0.0005, R: 6379 * 1000})
+
+# %% 26 - Streckenreduktion (Gauß-Krüger-Reduktion)
+import numpy as np
+import matplotlib.pyplot as plt
+
+R = 6379
+e = 100 / 1000
+y = np.arange(0, 150 + 1, 30)
+
+s = (1 + y**2 / (2 * R**2)) * e
+s -= e
+s *= 1000 * 1000
+
+plt.xlim(0, 150)
+plt.ylim(0, 30)
+plt.xlabel("y [km]")
+plt.ylabel("$s_{GK}$ [mm]")
+
+plt.plot(y, s, color="black")
+plt.plot(
+    [0, 150],
+    [10, 10],
+    linestyle="--",
+    linewidth=0.5,
+    color="black",
+)
+plt.savefig("26.png", dpi=300)
+
+# %%
+
+ds = 10e-3
+s = 100
+R = 6379e3
+
+y = np.sqrt((2 * ds * R**2) / s)
+
+sgk = ((1 + 90.213**2 / (2 * R**2)) * s) - s
+sgk * 1000 * 1000
+
+# %% 27 - Extenzerberechnung - Lokal
+from lib import YX, Polar, gon, to_gon, rws
+import matplotlib.pyplot as plt
+
+
+E = YX(0, 0)
+Z = E + Polar(27.763, gon(13.3825))
+F1 = E + Polar(50, gon(244.0851))
+F2 = E + Polar(52, gon(349.6782))
+
+
+E.plot(marker=".", label="E")
+Z.plot(marker="^", label="Z")
+F1.plot(marker="x", label="F1")
+F2.plot(marker="x", label="F2")
+
+E.plot_to(Z)
+E.plot_to(YX(0, 50), linewidth=0.5, linestyle="--")
+E.plot_to(F1, linewidth=0.5)
+E.plot_to(F2, linewidth=0.5)
+
+plt.axis("equal")
+plt.xlabel("Y [m]")
+plt.ylabel("X [m]")
+plt.xlim(-35, 35)
+plt.ylim(-35, 35)
+plt.savefig("27a.png")
+
+# %% 27 - Extenzerberechnung - Global
+from lib import gon, YX, Polar, rws, to_gon
+import matplotlib.pyplot as plt
+
+tEZ = gon(13.3825)
+tE1 = gon(244.0851)
+tE2 = gon(349.6782)
+
+
+Z = YX(31580.610, 5223806.430)
+F1 = YX(22159.230, 5220985.460)
+F2 = YX(30237.940, 5230284.730)
+E1 = rws(F1, Z, F2, tE1, tEZ, tE2, collins=False)
+E2 = rws(F1, Z, F2, tE1, tEZ, tE2, collins=True)
+E = E2
+
+
+E.plot(marker="o", label="Ex")
+Z.plot(marker="^", label="Z")
+# F1.plot(marker="^", label="F1")
+# F2.plot(marker="^", label="F2")
+# Z.plot_to(F1)
+# Z.plot_to(F2)
+# F1.plot_to(F2)
+
+Z.plot_to(Z + Z.polar_to(F1).with_length(100))
+Z.plot_to(Z + Z.polar_to(F2).with_length(100))
+
+plt.axis("equal")
+plt.xlabel("Y [m]")
+plt.ylabel("X [m]")
+plt.xlim(E.y - 50, E.y + 50)
+plt.ylim(E.x - 50, E.x + 50)
+plt.savefig("27c.png")
+
+
+# %%
+
+Z.plot(marker="^", label="Z")
+F1.plot(marker="^", label="F1")
+F2.plot(marker="^", label="F2")
+Z.plot_to(F1)
+Z.plot_to(F2)
+F1.plot_to(F2)
+
+plt.axis("equal")
+plt.xlabel("Y [m]")
+plt.ylabel("X [m]")
+plt.savefig("27b.png")
 
 # %%
