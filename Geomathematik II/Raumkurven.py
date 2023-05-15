@@ -1,71 +1,41 @@
+# %%
 import numpy as np
 import matplotlib.pyplot as plt
+from sympy import symbols, sin, cos, Matrix, diff, lambdify
 
+u, v = symbols("u v", real=True)
+u_range = (0, 1)
+v_range = (0, 2 * np.pi)
 
-def x(delta, lamda):
-    return [
-        (4 + np.cos(delta)) * np.cos(lamda),
-        (4 + np.cos(delta)) * np.sin(lamda),
-        np.sin(delta),
+# Die Raumkurve selbst
+x = Matrix(
+    [
+        3 * u * cos(v),
+        2 * u * sin(v),
+        u**2,
     ]
-
-
-# derivation of x with respect to delta
-def x_delta(delta, lamda):
-    return [
-        -np.sin(delta) * np.cos(lamda),
-        -np.sin(delta) * np.sin(lamda),
-        np.cos(delta),
-    ]
-
-
-# derivation of x with respect to lamda
-def x_lamda(delta, lamda):
-    return [
-        -(4 + np.cos(delta)) * np.sin(lamda),
-        (4 + np.cos(delta)) * np.cos(lamda),
-        0,
-    ]
-
-
-# second derivation of x with respect to delta
-def x_delta_delta(delta, lamda):
-    return [
-        -np.cos(delta) * np.cos(lamda),
-        -np.cos(delta) * np.sin(lamda),
-        -np.sin(delta),
-    ]
-
-
-# second derivation of x with respect to delta and lamda
-def x_delta_lamda(delta, lamda):
-    return [
-        np.sin(delta) * np.sin(lamda),
-        -np.sin(delta) * np.cos(lamda),
-        0,
-    ]
-
-
-# second derivation of x with respect to lamda
-def x_lamda_lamda(delta, lamda):
-    return [
-        -(4 + np.cos(delta)) * np.cos(lamda),
-        -(4 + np.cos(delta)) * np.sin(lamda),
-        0,
-    ]
-
-
-# cross produduct of x_delta and x_lamda (and is normalized)
-def z(delta, lamda):
-    z = np.cross(x_delta(delta, lamda), x_lamda(delta, lamda))
-    return z / np.linalg.norm(z)
-
-
-deltas, lamdas = np.meshgrid(
-    np.linspace(0, 2 * np.pi, 50),
-    np.linspace(0, 2 * np.pi, 50),
 )
-xs = x(deltas, lamdas)
+
+# Bogenlänge
+x_norm = x.norm().simplify()
+
+# Erste Ableitungen nach u, v und uv
+x_u = diff(x, u)
+x_v = diff(x, v)Q
+x_u_v = diff(x_u, v)
+
+# Erste Fundamentalform
+E = x_u.dot(x_u)
+F = x_u.dot(x_v)
+G = x_v.dot(x_v)
+
+# Raumkurve plotten
+uu, vv = np.meshgrid(
+    np.linspace(u_range[0], u_range[1], 50),
+    np.linspace(v_range[0], v_range[1], 50),
+)
+x_callable = lambdify((u, v), x, modules="numpy")
+xs = x_callable(uu, vv).reshape(3, 50, 50)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection="3d")
@@ -75,27 +45,8 @@ ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel("z")
 
+# %%
 
-def draw_tangent(delta, lamda, vec, **kwargs):
-    ax.plot(
-        [x(delta, lamda)[0], x(delta, lamda)[0] + vec[0]],
-        [x(delta, lamda)[1], x(delta, lamda)[1] + vec[1]],
-        [x(delta, lamda)[2], x(delta, lamda)[2] + vec[2]],
-        **kwargs,
-    )
-
-
-delta, lamda = np.pi / 3, np.pi / 3
-draw_tangent(delta, lamda, x_delta(delta, lamda), color="red")
-draw_tangent(delta, lamda, x_lamda(delta, lamda), color="green")
-draw_tangent(delta, lamda, z(delta, lamda), color="blue")
-
-draw_tangent(delta, lamda, x_delta_delta(delta, lamda), color="red", linestyle="dashed")
-draw_tangent(
-    delta, lamda, x_delta_lamda(delta, lamda), color="green", linestyle="dashed"
-)
-draw_tangent(
-    delta, lamda, x_lamda_lamda(delta, lamda), color="blue", linestyle="dashed"
-)
-
-plt.show()
+"Task 9"
+"Task 11"
+"Task 1c,d"

@@ -125,7 +125,7 @@ class SatelliteRenderer:
         count = len(epochs)
 
         lb = self.lower_bound
-        lb_time = time - 1 / 4  # 15 minutes before now
+        lb_time = time - 1 / 12  # 5 minutes before now
         lb_epoch = epochs[lb]
         while lb_epoch.time < lb_time and lb < count - 1:
             lb += 1
@@ -157,6 +157,9 @@ class SatelliteRenderer:
 
         my_pos = np.array([my_epoch.x, my_epoch.y, my_epoch.z])
         grace_pos = np.array([grace_epoch.x, grace_epoch.y, grace_epoch.z])
+
+        if my_pos[0] == grace_pos[0] and my_pos[1] == grace_pos[1]:
+            return [self.artist_connector]
 
         connection = grace_pos - my_pos
         alpha = np.arccos(

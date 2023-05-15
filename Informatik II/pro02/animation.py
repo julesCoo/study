@@ -21,13 +21,17 @@ def generate_animation(
 
     # setup Robinson projection plot (whole earth)
     # ax = plt.axes(projection=ccrs.Orthographic(central_latitude=80))
-    ax = plt.axes(proj=ccrs.Robinson())
+    ax = plt.axes(projection=ccrs.Robinson())
     ax.set_global()
 
     # use the appropriate background image for this date
     # the image is a PlateCarree projected image of the earth,
     # which is reprojected to Robinson here
-    ax.imshow(background_img, transform=ccrs.PlateCarree())
+    ax.imshow(
+        background_img,
+        extent=[-180, 180, -90, 90],
+        transform=ccrs.PlateCarree(),
+    )
 
     # create renderers for each satellite
     satellite_renderers = [SatelliteRenderer(ax, sat) for sat in satellites]
@@ -64,11 +68,7 @@ def generate_animation(
         blit=True,
     )
 
-    measure_update_perf(anim)
-    # plt.show()
-
-
-# %%
+    # measure_update_perf(anim)
 
 
 def measure_update_perf(anim: animation.FuncAnimation):

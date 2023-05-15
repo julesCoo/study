@@ -47,8 +47,7 @@ generate_animation(
     visibility=not args.novisibility,
 )
 
-# Save or show animation
 if args.outfile:
     plt.savefig(args.outfile)
-else:
-    plt.show()
+
+plt.show()
