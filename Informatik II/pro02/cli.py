@@ -31,7 +31,7 @@ parser.add_argument(
     type=str,
     nargs=2,
     help="start and end time in hours to limit animation",
-    default=["0", "24"],
+    default=["0", "23"],
 )
 
 # Parse arguments

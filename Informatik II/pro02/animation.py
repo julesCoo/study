@@ -20,7 +20,8 @@ def generate_animation(
     satellites = load_satellites(date)
 
     # setup Robinson projection plot (whole earth)
-    ax = plt.axes(projection=ccrs.Robinson())
+    # ax = plt.axes(projection=ccrs.Orthographic(central_latitude=80))
+    ax = plt.axes(proj=ccrs.Robinson())
     ax.set_global()
 
     # use the appropriate background image for this date
@@ -30,13 +31,29 @@ def generate_animation(
 
     # create renderers for each satellite
     satellite_renderers = [SatelliteRenderer(ax, sat) for sat in satellites]
+    grace_renderer = next(
+        (r for r in satellite_renderers if r.satellite.is_grace()), None
+    )
 
-    def update(hour):
+    last_time = 0
+
+    def update(time):
+        # restart the animation if we looped around
+        nonlocal last_time
+        if time < last_time:
+            for renderer in satellite_renderers:
+                renderer.restart()
+        last_time = time
+
         # on each frame, update all the renderers
         artists = []
         for renderer in satellite_renderers:
-            satellite_artists = renderer.update(hour)
-            artists.extend(satellite_artists)
+            artists.extend(renderer.update(time))
+
+        if grace_renderer:
+            for renderer in satellite_renderers:
+                artists.extend(renderer.draw_connector(grace_renderer))
+
         return artists
 
     anim = animation.FuncAnimation(
@@ -56,7 +73,7 @@ def generate_animation(
 
 def measure_update_perf(anim: animation.FuncAnimation):
     # Set the number of update iterations to measure
-    num_iterations = 100
+    num_iterations = 10
 
     # Start the timer
     start_time = time.time()

@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 from cartopy import crs as ccrs
-from typing import Any
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.artist as artist
@@ -16,12 +14,19 @@ class Epoch:
     lat: float
     lon: float
 
+    # geocentric coordinates of the satellite at this time
+    x: float
+    y: float
+    z: float
+
 
 @dataclass
 class Satellite:
     name: str
     epochs: list[Epoch]
-    df: pd.DataFrame
+
+    def is_grace(self) -> bool:
+        return "grace" in self.name
 
     @staticmethod
     def load_from_file(file_path: str) -> "Satellite":
@@ -39,19 +44,7 @@ class Satellite:
         phi = np.degrees(np.arcsin(z / r))
         theta = np.degrees(np.arctan2(y, x))
 
-        df = pd.DataFrame(
-            {
-                "time": time,
-                "lat": phi,
-                "lon": theta,
-                "x": x,
-                "y": y,
-                "z": z,
-            }
-        )
-        df.sort_values(by="time", inplace=True)
-
-        # convert to epochs
+        # convert to epochs, for more performant lookups later
         epochs = []
         for i in range(num_rows):
             epochs.append(
@@ -59,13 +52,16 @@ class Satellite:
                     time=time[i],
                     lat=phi[i],
                     lon=theta[i],
+                    x=x[i],
+                    y=y[i],
+                    z=z[i],
                 )
             )
 
         # sort epochs by time, to speed up later lookups
         epochs = sorted(epochs, key=lambda epoch: epoch.time)
 
-        return Satellite(name, epochs, df)
+        return Satellite(name, epochs)
 
 
 class SatelliteRenderer:
@@ -79,8 +75,9 @@ class SatelliteRenderer:
     upper_bound: int
 
     # the artists that are updated during the animation
-    line: plt.Line2D
-    text: plt.Text
+    artist_tail: plt.Line2D
+    artist_connector: plt.Line2D
+    artist_label: plt.Text
 
     def __init__(
         self,
@@ -91,57 +88,93 @@ class SatelliteRenderer:
         self.lower_bound = 0
         self.upper_bound = 0
 
-        color = "red" if "grace" in satellite.name else "yellow"
+        color = "red" if satellite.is_grace() else "yellow"
 
         # prepare the animation by rendering the initial state
         # into the axes. later we will only update the artists
         # that are created here
-        lon, lat = satellite.df.at[0, "lon"], satellite.df.at[0, "lat"]
+        lon, lat = satellite.epochs[0].lon, satellite.epochs[0].lat
 
-        self.line = ax.plot(
-            lon,
-            lat,
+        self.artist_tail = ax.plot(
+            [],
+            [],
             color=color,
             transform=ccrs.Geodetic(),
         )[0]
 
-        self.text = ax.text(
+        self.artist_connector = ax.plot(
+            [],
+            [],
+            color="orange",
+            linewidth=0.5,
+            transform=ccrs.Geodetic(),
+        )[0]
+
+        self.artist_label = ax.text(
             lon,
             lat,
             satellite.name,
             color=color,
             verticalalignment="center",
             horizontalalignment="left",
-            transform=ccrs.Geodetic(),
+            transform=ccrs.PlateCarree(),
         )
 
     def update(self, time: float) -> list[artist.Artist]:
-        df = self.satellite.df
-        count = len(df)
+        epochs = self.satellite.epochs
+        count = len(epochs)
 
-        lower_bound_time = time - 1 / 4  # 15 minutes before now
-        upper_bound_time = time
+        lb = self.lower_bound
+        lb_time = time - 1 / 4  # 15 minutes before now
+        lb_epoch = epochs[lb]
+        while lb_epoch.time < lb_time and lb < count - 1:
+            lb += 1
+            lb_epoch = epochs[lb]
 
-        # seek the lower_bound to the first index that is after the given time - dT
-        while (
-            self.lower_bound < count
-            and df.at[self.lower_bound, "time"] < lower_bound_time
-        ):
-            self.lower_bound += 1
-
-        # seek the upper_bound to the first index that is after the given time
-        while (
-            self.upper_bound < count
-            and df.at[self.upper_bound, "time"] < upper_bound_time
-        ):
-            self.upper_bound += 1
+        ub = self.upper_bound
+        ub_time = time
+        up_epoch = epochs[ub]
+        while up_epoch.time < ub_time and ub < count - 1:
+            ub += 1
+            up_epoch = epochs[ub]
 
         # extract the lon and lat of the satellite at the given time
-        lons = [row["lon"] for i, row in df.iloc[self.lower_bound:self.upper_bound + 1].iterrows()]
-        lats = [row["lat"] for i, row in df.iloc[self.lower_bound:self.upper_bound + 1].iterrows()]
+        lons = [epoch.lon for epoch in epochs[lb : ub + 1]]
+        lats = [epoch.lat for epoch in epochs[lb : ub + 1]]
 
+        self.artist_label.set_position((lons[-1], lats[-1]))
+        self.artist_tail.set_data(lons, lats)
 
-        self.line.set_data(lons, lats)
-        self.text.set_position((lons[-1], lats[-1]))
+        self.lower_bound = lb
+        self.upper_bound = ub
+        return [self.artist_tail, self.artist_label]
 
-        return [self.line, self.text]
+    def draw_connector(
+        self, grace_renderer: "SatelliteRenderer"
+    ) -> list[artist.Artist]:
+        my_epoch = self.satellite.epochs[self.upper_bound]
+        grace_epoch = grace_renderer.satellite.epochs[grace_renderer.upper_bound]
+
+        my_pos = np.array([my_epoch.x, my_epoch.y, my_epoch.z])
+        grace_pos = np.array([grace_epoch.x, grace_epoch.y, grace_epoch.z])
+
+        connection = grace_pos - my_pos
+        alpha = np.arccos(
+            np.dot(grace_pos, connection)
+            / (np.linalg.norm(grace_pos) * np.linalg.norm(connection))
+        )
+        is_visible = alpha > np.pi / 2
+
+        if is_visible:
+            self.artist_connector.set_data(
+                [my_epoch.lon, grace_epoch.lon],
+                [my_epoch.lat, grace_epoch.lat],
+            )
+        else:
+            self.artist_connector.set_data([], [])
+
+        return [self.artist_connector]
+
+    def restart(self):
+        self.lower_bound = 0
+        self.upper_bound = 0
