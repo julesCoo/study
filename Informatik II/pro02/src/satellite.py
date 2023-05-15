@@ -36,6 +36,7 @@ class SatelliteRenderer:
 
     # Plot elements that are updated during animation
     tail: plt.Line2D
+    head: plt.Line2D
     line_of_sight: plt.Line2D
     label: plt.Text
 
@@ -59,6 +60,14 @@ class SatelliteRenderer:
             [],
             color=color,
             transform=ccrs.Geodetic(),
+        )[0]
+        self.head = ax.plot(
+            [lon],
+            [lat],
+            color=color,
+            marker="o",
+            markersize=2,
+            transform=ccrs.PlateCarree(),
         )[0]
         self.line_of_sight = ax.plot(
             [],
@@ -86,30 +95,18 @@ class SatelliteRenderer:
         head_time = time
         tail_time = time - 5 / 60  # 5 minutes ago
 
-        # Move head and tail indices forward until they surpass their given time.
-        # This is less accurate than interpolating the actual position at the given time,
-        # but this is much faster and good enough for the animation.
-        while (
-            self.epochs[self.tail_index].time < tail_time
-            and self.tail_index < len(self.epochs) - 1
-        ):
-            self.tail_index += 1
-        while (
-            self.epochs[self.head_index].time < head_time
-            and self.head_index < len(self.epochs) - 1
-        ):
-            self.head_index += 1
+        lons, lats = self.get_lons_lats(time)
+        if len(lons) == 0:
+            return []
 
-        # Extract the positions that the satellite has been at in the last 5 minutes
-        epochs = self.epochs[self.tail_index : self.head_index + 1]
-        lons = [epoch.lon for epoch in epochs]
-        lats = [epoch.lat for epoch in epochs]
+        lon, lat = lons[-1], lats[-1]
 
         # And update the tail and label position accordingly
-        self.label.set_position((lons[-1], lats[-1]))
         self.tail.set_data(lons, lats)
+        self.head.set_data(lon, lat)
+        self.label.set_position((lon, lat))
 
-        return [self.tail, self.label]
+        return [self.tail, self.head, self.label]
 
     def draw_line_of_sight(self, grace: "SatelliteRenderer") -> list[artist.Artist]:
         """
@@ -164,3 +161,66 @@ class SatelliteRenderer:
         """
         self.tail_index = 0
         self.head_index = 0
+
+    def get_lons_lats(self, target_time) -> tuple[list[float], list[float]]:
+        head_time = target_time
+        tail_time = target_time - 5 / 60  # 5 minutes ago
+
+        if False:
+            try:
+                lat1, lon1 = self.interpolate_position(tail_time)
+                lat2, lon2 = self.interpolate_position(head_time)
+                return ([lon1, lon2], [lat1, lat2])
+            except ValueError:
+                return ([], [])
+        else:
+            # Move head and tail indices forward until they surpass their given time.
+            # This is less accurate than interpolating the actual position at the given time,
+            # but this is much faster and good enough for the animation.
+            while (
+                self.epochs[self.tail_index].time < tail_time
+                and self.tail_index < len(self.epochs) - 1
+            ):
+                self.tail_index += 1
+            while (
+                self.epochs[self.head_index].time < head_time
+                and self.head_index < len(self.epochs) - 1
+            ):
+                self.head_index += 1
+
+            # Extract the positions that the satellite has been at in the last 5 minutes
+            epochs = self.epochs[self.tail_index : self.head_index + 1]
+            lons = [epoch.lon for epoch in epochs]
+            lats = [epoch.lat for epoch in epochs]
+
+            return (lons, lats)
+
+    def interpolate_position(self, target_time: float) -> tuple[float, float]:
+        # Find the indices of the epochs that surround the target time
+        lower_index = None
+        upper_index = None
+        for i, epoch in enumerate(self.epochs):
+            if epoch.time <= target_time:
+                lower_index = i
+            if epoch.time >= target_time:
+                upper_index = i
+                break
+
+        if lower_index is None or upper_index is None:
+            raise ValueError("Target time is outside the range of available epochs.")
+
+        lower_epoch = self.epochs[lower_index]
+        upper_epoch = self.epochs[upper_index]
+
+        # Perform linear interpolation based on the time difference
+        time_diff = upper_epoch.time - lower_epoch.time
+        if time_diff == 0:
+            weight = 0.5  # If both epochs have the same time, use equal weighting
+        else:
+            weight = (target_time - lower_epoch.time) / time_diff
+
+        # Interpolate latitude and longitude
+        lat = lower_epoch.lat + (upper_epoch.lat - lower_epoch.lat) * weight
+        lon = lower_epoch.lon + (upper_epoch.lon - lower_epoch.lon) * weight
+
+        return lat, lon

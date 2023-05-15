@@ -116,8 +116,8 @@ class OrbitsAnimation(TimeBasedAnimation):
     ):
         super().__init__(
             time_range=(from_hour, to_hour),
-            time_per_second=2,  # 2 hours per second, so 1 day takes 12 seconds
-            frames_per_second=20,
+            time_per_second=0.5,  # 30 min per second, so 1 day takes 48 seconds
+            frames_per_second=60,
         )
 
         # load the data used in this animation
