@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from epoch import Epoch, load_epochs
 from matplotlib import pyplot as plt
+from print import print_progress
 
 # Map the directory structure of the FTP server on `ftp_dir` to `local_dir`
 ftp_host = "ftp.tugraz.at"
@@ -56,6 +57,7 @@ def download_directory(relative_path: str) -> str:
     local_path = f"{local_dir}/{relative_path}"
 
     # Ensure local directory exists
+    print("Syncing orbit files from FTP server...")
     os.makedirs(local_path, exist_ok=True)
 
     # login to the FTP server
@@ -64,16 +66,19 @@ def download_directory(relative_path: str) -> str:
         ftp.cwd(ftp_path)
         filenames = ftp.nlst()
 
+        download_list = []
         for filename in filenames:
             local_file = f"{local_path}/{filename}"
-            if os.path.exists(local_file):
-                # File already exists, skip download
-                continue
+            if not os.path.exists(local_file):
+                download_list.append(filename)
 
-            # Download file
-            print(f"Downloading {filename}...")
-            with open(local_file, "wb") as fp:
-                ftp.retrbinary("RETR " + filename, fp.write)
+        if len(download_list) == 0:
+            print("All files are up to date.")
+        else:
+            for i, filename in enumerate(download_list):
+                print_progress(f"Downloading {filename}", i, len(download_list))
+                with open(f"{local_path}/{filename}", "wb") as fp:
+                    ftp.retrbinary("RETR " + filename, fp.write)
 
     return local_path
 
@@ -83,16 +88,18 @@ def load_satellite_orbits(date: datetime.date) -> dict[str, list[Epoch]]:
     Loads all orbit data for a given date into one dataframe.
     Data is automatically downloaded from the FTP if not already present locally.
     """
+
+    # Orbits are stored in a directory named after the date
+    rel_path = f"orbit/" + date.strftime("%Y-%m-%d")
+
     # Ensure we have all orbit files in the local directory
-    rel_path = date_to_path(date)
     local_path = download_directory(rel_path)
 
     orbits = {}
     for filename in os.listdir(local_path):
-        filepath = f"{local_path}/{filename}"
         name = filename.split(".")[-3]  # file path ends with YYYY-MM-DD.SATNAME.gz.txt
-        epochs = load_epochs(filepath)
-        orbits[name] = epochs
+        orbits[name] = load_epochs(f"{local_path}/{filename}")
+
     return orbits
 
 

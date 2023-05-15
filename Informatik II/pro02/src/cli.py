@@ -39,7 +39,7 @@ args = parser.parse_args()
 date = datetime.datetime.strptime(args.date, "%Y-%m-%d").date()
 
 # Generate animation
-print(f"Generating animation for {date}.")
+print(f"Generating animation for {date}...")
 
 anim = OrbitsAnimation(
     date=date,
@@ -51,6 +51,8 @@ anim = OrbitsAnimation(
 # Save animation to file if specified
 if args.outfile:
     anim.save(args.outfile, writer="pillow")
+    print(f"Saved animation to {args.outfile}.")
 
 # Finally, show animation
+print("Displaying animation, close window to exit.")
 plt.show()
