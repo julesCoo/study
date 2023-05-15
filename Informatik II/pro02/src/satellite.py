@@ -86,6 +86,15 @@ class SatelliteRenderer:
             transform=ccrs.PlateCarree(),
         )
 
+        ax.plot(
+            [epoch.lon for epoch in self.epochs],
+            [epoch.lat for epoch in self.epochs],
+            color=color,
+            # linewidth=0.1,
+            alpha=0.1,
+            transform=ccrs.Geodetic(),
+        )
+
     def draw_tail(self, time: float) -> list[artist.Artist]:
         """
         The main animation method. This is called once per frame.
