@@ -38,16 +38,18 @@ parser.add_argument(
 args = parser.parse_args()
 date = datetime.datetime.strptime(args.date, "%Y-%m-%d").date()
 
-
 # Generate animation
-generate_animation(
+print(f"Generating animation for {date}...")
+anim = generate_animation(
     date=date,
     from_time=datetime.time(int(args.time[0])),
     to_time=datetime.time(int(args.time[1])),
     visibility=not args.novisibility,
 )
 
+# Save animation to file if specified
 if args.outfile:
-    plt.savefig(args.outfile)
+    anim.save(args.outfile, writer="pillow")
 
+# Finally, show animation
 plt.show()

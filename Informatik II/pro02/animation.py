@@ -6,8 +6,6 @@ import matplotlib.animation as animation
 import cartopy.crs as ccrs
 from loader import load_satellites, load_background_image
 from Satellite import SatelliteRenderer
-import pandas as pd
-import numpy as np
 
 
 def generate_animation(
@@ -15,13 +13,15 @@ def generate_animation(
     from_time: datetime.time,
     to_time: datetime.time,
     visibility=True,
-) -> plt.Figure:
+) -> animation.FuncAnimation:
+    print("Loading data...")
     background_img = load_background_image(date)
     satellites = load_satellites(date)
 
+    print("Creating animation...")
     # setup Robinson projection plot (whole earth)
     # ax = plt.axes(projection=ccrs.Orthographic(central_latitude=80))
-    ax = plt.axes(projection=ccrs.Robinson())
+    ax = plt.axes(projection=ccrs.PlateCarree())
     ax.set_global()
 
     # use the appropriate background image for this date
@@ -39,15 +39,22 @@ def generate_animation(
         (r for r in satellite_renderers if r.satellite.is_grace()), None
     )
 
-    last_time = 0
+    animation_speed = 2  # hours of data per second of animation
+    animation_frequency = 30  # frames per second
 
-    def update(time):
+    real_time_total = to_time.hour - from_time.hour
+    animation_time_total = real_time_total / animation_speed
+    num_frames = int(animation_time_total * animation_frequency)
+
+    def update(frame_num):
+        print(f"rendering frame {frame_num+1} of {num_frames}")
+
         # restart the animation if we looped around
-        nonlocal last_time
-        if time < last_time:
+        if frame_num == 0:
             for renderer in satellite_renderers:
                 renderer.restart()
-        last_time = time
+
+        time = from_time.hour + frame_num / animation_frequency * animation_speed
 
         # on each frame, update all the renderers
         artists = []
@@ -63,12 +70,13 @@ def generate_animation(
     anim = animation.FuncAnimation(
         fig=ax.figure,
         func=update,
-        frames=np.arange(0, 24, 0.05),
-        interval=20,
+        frames=num_frames,
+        interval=1000 / animation_frequency,
         blit=True,
     )
 
     # measure_update_perf(anim)
+    return anim
 
 
 def measure_update_perf(anim: animation.FuncAnimation):
