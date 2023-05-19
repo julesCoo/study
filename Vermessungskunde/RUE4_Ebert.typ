@@ -93,6 +93,75 @@ $
 == 27 - Exzenterberechnung (Direkter Anschluss)
 _Für die Bestimmung der Koordinaten eines südwestlich vom Zentrum gelegenen exzentrischen Standpunktes Ex wurden mit einer Totalstation Beobachtungen zum Zentrum Z (Richtung R und Strecke dGK) und zu zwei Fernzielen F1 und F2 (nur Richtungen R) durchgeführt („Direkter Anschluss“), siehe Messprotokoll (die Strecke dGK vom Exzenter zum Zentrum ist bereits in die Gauß-Krüger-Ebene reduziert)._
 
-#image("27a.png")
-#image("27b.png")
-#image("27c.png")
+_a) Fertigen Sie eine lagerichtige Skizze der Situation an!_
+_b) Berechnen Sie die Koordinaten des exzentrischen Standpunktes Ex!_
+_c) Sind die Beobachtungen aus dem Messprotokoll für eine kontrollierte Bestimmung des Exzentrums ausreichend? Wenn ja, begründen Sie warum, wenn nein, weisen Sie auf kritische Elemente hin und machen Sie Vorschläge zur Verbesserung!_
+
+_*Messprotokoll:*_
+#align(center)[
+  #table(
+    columns: 4,
+    align: center,
+    stroke: none,
+    [*Standpunkt*], [*Zielpunkt*],  [*R [g]*],  [*dGK [m]*],
+    [Ex],           [Z],            [13.3825],  [27.763],
+    [],             [F1],           [244.0851], [],
+    [],             [F2],           [349.6782], [],
+  )
+]
+
+_*Koordinatenverzeichnis: System Gauß-Krüger, M31*_
+#align(center)[
+  #table(
+    columns: 4,
+    align: center,
+    stroke: none,
+    [*Pkt.-Nr.*], [*y [m]*], [*x [m]*], [*Anmerkung*],
+    [Z],          [31580.610], [5223806.430], [Zentrum],
+    [F1],         [22159.230], [5220985.460], [Fernziel],
+    [F2],         [30237.940], [5230284.730], [Fernziel],
+  )
+]
+
+
+Es handelt sich um einen Rückwärtsschnitt mit den beiden Randpunkten F2 und F1, und dem zentralen Punkt Z.
+
+Von Ex aus werden die Winkel zwischen F1 und Z, sowie zwischen Z und F2 gemessen:
+
+$
+alpha &= t_"FF-Z" &= 63.7043 "gon" \
+beta &= t_"Z-F1" &= 230.7026 "gon" \
+$
+
+#figure(
+  image("27a.png"), 
+  caption: [Messaufbau im lokalen System der Totalstation.]
+)
+
+Da die Koordinaten der Punkte bekannt sind, lassen sich die Strecken zwischen ihnen berechnen.
+
+$
+d_"F1_Z" &= 9834.647 "m" \
+d_"F2_Z" &= 6615.976 "m" \
+$
+
+#figure(
+  image("27b.png"), 
+  caption: [Lage der drei bekannten Punkte im Gauß-Krüger-System]
+)
+
+Mithilfe der Winkel und Strecken lässt sich ein Rückwärtsschnitt rechnen. Daraus ergeben sich die Koordinaten des Standpunktes Ex. 
+
+$
+y_"Ex" &= 31569.048 "m" \
+x_"Ex" &= 5223795.164 "m"
+$
+
+#figure(
+  image("27c.png"), 
+  caption: [Vergrößerter Ausschnitt der Lage im Gauß-Krüger-System]
+)
+
+Für eine bessere Messung sollten die Winkel $alpha$ und $beta$ möglichst gleich groß sein, eine bessere Position des Exzenters wäre also weiter links.
+
+Für amtliche Messung ist dieses Verfahren aber ohnehin nicht zulässig für eine genaue Punktbestimmung des Exzenters. 

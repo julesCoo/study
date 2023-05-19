@@ -175,14 +175,15 @@ class SatelliteRenderer:
         head_time = target_time
         tail_time = target_time - 5 / 60  # 5 minutes ago
 
-        if False:
+        mode = 3
+        if mode == 1:
             try:
                 lat1, lon1 = self.interpolate_position(tail_time)
                 lat2, lon2 = self.interpolate_position(head_time)
                 return ([lon1, lon2], [lat1, lat2])
             except ValueError:
                 return ([], [])
-        else:
+        if mode == 2:
             # Move head and tail indices forward until they surpass their given time.
             # This is less accurate than interpolating the actual position at the given time,
             # but this is much faster and good enough for the animation.
@@ -201,35 +202,10 @@ class SatelliteRenderer:
             epochs = self.epochs[self.tail_index : self.head_index + 1]
             lons = [epoch.lon for epoch in epochs]
             lats = [epoch.lat for epoch in epochs]
-
             return (lons, lats)
-
-    def interpolate_position(self, target_time: float) -> tuple[float, float]:
-        # Find the indices of the epochs that surround the target time
-        lower_index = None
-        upper_index = None
-        for i, epoch in enumerate(self.epochs):
-            if epoch.time <= target_time:
-                lower_index = i
-            if epoch.time >= target_time:
-                upper_index = i
-                break
-
-        if lower_index is None or upper_index is None:
-            raise ValueError("Target time is outside the range of available epochs.")
-
-        lower_epoch = self.epochs[lower_index]
-        upper_epoch = self.epochs[upper_index]
-
-        # Perform linear interpolation based on the time difference
-        time_diff = upper_epoch.time - lower_epoch.time
-        if time_diff == 0:
-            weight = 0.5  # If both epochs have the same time, use equal weighting
-        else:
-            weight = (target_time - lower_epoch.time) / time_diff
-
-        # Interpolate latitude and longitude
-        lat = lower_epoch.lat + (upper_epoch.lat - lower_epoch.lat) * weight
-        lon = lower_epoch.lon + (upper_epoch.lon - lower_epoch.lon) * weight
-
-        return lat, lon
+        if mode == 3:
+            lat, lon, dlat, dlon = self.interpolate_position(head_time)
+            return (
+                [lon - dlon * 5, lon],
+                [lat - dlat * 5, lat],
+            )

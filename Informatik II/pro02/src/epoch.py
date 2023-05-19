@@ -18,6 +18,10 @@ class Epoch:
     lat: float
     lon: float
 
+    # the change in latitude and longitude since the previous epoch
+    dlat: float
+    dlon: float
+
     # geocentric coordinates of the satellite at this time
     x: float
     y: float
@@ -53,6 +57,8 @@ def load_epochs(file_path: str) -> list[Epoch]:
                 time=time[i],
                 lat=phi[i],
                 lon=theta[i],
+                dlat=phi[i] - phi[i - 1] if i > 0 else 0,
+                dlon=theta[i] - theta[i - 1] if i > 0 else 0,
                 x=x[i],
                 y=y[i],
                 z=z[i],
@@ -63,3 +69,38 @@ def load_epochs(file_path: str) -> list[Epoch]:
     epochs = sorted(epochs, key=lambda epoch: epoch.time)
 
     return epochs
+
+
+def interpolate_position(
+    epochs: list[Epoch], target_time: float
+) -> tuple[float, float]:
+    # Find the indices of the epochs that surround the target time
+    lower_index = None
+    upper_index = None
+    for i, epoch in enumerate(epochs):
+        if epoch.time <= target_time:
+            lower_index = i
+        if epoch.time >= target_time:
+            upper_index = i
+            break
+
+    if lower_index is None or upper_index is None:
+        raise ValueError("Target time is outside the range of available epochs.")
+
+    lower_epoch = epochs[lower_index]
+    upper_epoch = epochs[upper_index]
+
+    # Perform linear interpolation based on the time difference
+    time_diff = upper_epoch.time - lower_epoch.time
+    if time_diff == 0:
+        weight = 0.5  # If both epochs have the same time, use equal weighting
+    else:
+        weight = (target_time - lower_epoch.time) / time_diff
+
+    # Interpolate latitude and longitude
+    lat = lower_epoch.lat + (upper_epoch.lat - lower_epoch.lat) * weight
+    lon = lower_epoch.lon + (upper_epoch.lon - lower_epoch.lon) * weight
+    dlat = lower_epoch.dlat + (upper_epoch.dlat - lower_epoch.dlat) * weight
+    dlon = lower_epoch.dlon + (upper_epoch.dlon - lower_epoch.dlon) * weight
+
+    return lat, lon, dlat, dlon
