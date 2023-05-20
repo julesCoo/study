@@ -1,11 +1,13 @@
-from dataclasses import dataclass
 from enum import Enum
 
 import matplotlib.artist as artist
+import matplotlib.lines as lines
 import matplotlib.pyplot as plt
+import matplotlib.text as text
 import numpy as np
 from cartopy import crs as ccrs
-from epoch import Epoch
+
+from epoch import Epoch, interpolate_position
 
 
 class SatelliteType(Enum):
@@ -35,10 +37,10 @@ class SatelliteRenderer:
     head_index: int = 0
 
     # Plot elements that are updated during animation
-    tail: plt.Line2D
-    head: plt.Line2D
-    line_of_sight: plt.Line2D
-    label: plt.Text
+    tail: lines.Line2D
+    head: lines.Line2D
+    line_of_sight: lines.Line2D
+    label: text.Text
 
     def __init__(self, name: str, epochs: list[Epoch]):
         self.name = name
@@ -171,41 +173,11 @@ class SatelliteRenderer:
         self.tail_index = 0
         self.head_index = 0
 
-    def get_lons_lats(self, target_time) -> tuple[list[float], list[float]]:
+    def get_lons_lats(self, target_time):
         head_time = target_time
-        tail_time = target_time - 5 / 60  # 5 minutes ago
 
-        mode = 3
-        if mode == 1:
-            try:
-                lat1, lon1 = self.interpolate_position(tail_time)
-                lat2, lon2 = self.interpolate_position(head_time)
-                return ([lon1, lon2], [lat1, lat2])
-            except ValueError:
-                return ([], [])
-        if mode == 2:
-            # Move head and tail indices forward until they surpass their given time.
-            # This is less accurate than interpolating the actual position at the given time,
-            # but this is much faster and good enough for the animation.
-            while (
-                self.epochs[self.tail_index].time < tail_time
-                and self.tail_index < len(self.epochs) - 1
-            ):
-                self.tail_index += 1
-            while (
-                self.epochs[self.head_index].time < head_time
-                and self.head_index < len(self.epochs) - 1
-            ):
-                self.head_index += 1
-
-            # Extract the positions that the satellite has been at in the last 5 minutes
-            epochs = self.epochs[self.tail_index : self.head_index + 1]
-            lons = [epoch.lon for epoch in epochs]
-            lats = [epoch.lat for epoch in epochs]
-            return (lons, lats)
-        if mode == 3:
-            lat, lon, dlat, dlon = self.interpolate_position(head_time)
-            return (
-                [lon - dlon * 5, lon],
-                [lat - dlat * 5, lat],
-            )
+        lat, lon, dlat, dlon = interpolate_position(self.epochs, head_time)
+        return (
+            [lon - dlon * 5, lon],
+            [lat - dlat * 5, lat],
+        )

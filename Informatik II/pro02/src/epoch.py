@@ -73,7 +73,7 @@ def load_epochs(file_path: str) -> list[Epoch]:
 
 def interpolate_position(
     epochs: list[Epoch], target_time: float
-) -> tuple[float, float]:
+):
     # Find the indices of the epochs that surround the target time
     lower_index = None
     upper_index = None
