@@ -12,7 +12,7 @@ class Args:
 
     date: datetime.date
     time_range: [float, float]
-    novisibility: bool
+    show_visibility: bool
     outfile: str
     frames_per_second: int
     animation_speed: float = 1
@@ -72,7 +72,7 @@ def parse_arguments():
     return Args(
         date=datetime.datetime.strptime(args.date, "%Y-%m-%d").date(),
         time_range=[float(args.time[0]), float(args.time[1])],
-        novisibility=args.novisibility,
+        show_visibility=not args.novisibility,
         outfile=args.outfile,
         frames_per_second=args.fps,
         animation_speed=args.speed,

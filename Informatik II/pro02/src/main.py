@@ -19,7 +19,7 @@ background_image = load_background_image(args.date)
 animation = create_animation(
     frames_per_second=args.frames_per_second,
     keyframes=keyframes,
-    novisibility=args.novisibility,
+    show_visibility=args.show_visibility,
     satellites=satellites,
     background_image=background_image,
 )

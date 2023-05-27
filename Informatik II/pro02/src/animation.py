@@ -30,7 +30,7 @@ def create_keyframes(
 def create_animation(
     frames_per_second: int,
     keyframes: list[float],
-    novisibility: bool,
+    show_visibility: bool,
     satellites: list[Satellite],
     background_image: np.ndarray,
 ) -> FuncAnimation:
@@ -38,7 +38,7 @@ def create_animation(
     Creates the animation.
 
     :param animation_data: The data for the animation.
-    :param novisibility: Whether to hide the visibility of the satellites.
+    :param show_visibility: Whether to hide the visibility of the satellites.
     :param background_image: The background image to use.
     :return: The animation.
     """
@@ -69,7 +69,7 @@ def create_animation(
 
         artists = []
 
-        if not novisibility:
+        if not show_visibility:
             for sat in satellites:
                 artists += sat.update_visibility(frame, grace)
 
