@@ -14,6 +14,7 @@ def print_progress(name: str, done: int, total: int) -> None:
     s += "]"
     s += f" {done}/{total} - {name}"
     s += " " * (terminal_width - len(s))
+    s += "\r"
 
     if done == total:
         s += "\n"

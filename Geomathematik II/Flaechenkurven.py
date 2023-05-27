@@ -1,5 +1,4 @@
 # %%
-import matplotlib.pyplot as plt
 import numpy as np
 from sympy import Matrix, cos, diff, lambdify, sin, symbols, sqrt
 
@@ -62,6 +61,7 @@ x_x = x_u.dot(U_u) + x_v.dot(V_v)
 
 
 """Plotting"""
+import matplotlib.pyplot as plt
 
 
 # Raumkurve plotten

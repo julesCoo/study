@@ -1,185 +1,87 @@
-import datetime
-from abc import ABC, abstractmethod
-from typing import Optional
-
-import matplotlib.animation as animation
-import matplotlib.artist as artist
 import matplotlib.pyplot as plt
-import numpy as np
+from matplotlib.animation import FuncAnimation
 from cartopy import crs as ccrs
-from loader import load_background_image, load_satellite_orbits
+from satellite import Satellite
+from matplotlib.artist import Artist
 from print import print_progress
-from satellite import SatelliteRenderer, SatelliteType
+import numpy as np
 
 
-class TimeBasedAnimation(ABC):
+def create_keyframes(
+    start_time: float,
+    end_time: float,
+    time_per_second: float = 1,
+    frames_per_second: int = 30,
+) -> list[float]:
     """
-    Abstract base class for animations that visualize some real-time data.
-    Can be used to control the playback speed and FPS of the animation.
-    Implementers must implement the `setup`, `restart` and `update` methods.
-    """
+    Returns a list of keyframes for the animation.
 
-    num_frames: int
-    time_range: tuple[float, float]
-
-    time_per_second: float
-    frames_per_second: int
-
-    def __init__(
-        self,
-        time_range: tuple[float, float],
-        time_per_second: float,
-        frames_per_second: int = 30,
-    ):
-        self.time_range = time_range
-        self.time_per_second = time_per_second
-        self.frames_per_second = frames_per_second
-        self.num_frames = int(
-            (time_range[1] - time_range[0]) / time_per_second * frames_per_second
-        )
-
-    def start(self) -> animation.FuncAnimation:
-        """
-        Creates a new Figure object and starts the animation.
-        """
-
-        fig = plt.figure(figsize=(10, 10))
-
-        # Subclass must setup the animation by adding artists to the figure.
-        self.setup(fig)
-
-        # This function is called for each frame of the animation.
-        def next_frame(frame: int) -> list[artist.Artist]:
-            print_progress("Rendering Animation Frames", frame + 1, self.num_frames)
-
-            # Call `restart` on the first frame of each loop to allow subclasses
-            # to reset their state.
-            if frame == 0:
-                self.restart()
-
-            # Convert frame number into a time value to be used in the animation update.
-            time = (
-                self.time_range[0]
-                + frame / self.frames_per_second * self.time_per_second
-            )
-
-            # Subclass must implement the `update` method to update the artists.
-            return self.update(time)
-
-        return animation.FuncAnimation(
-            fig,
-            next_frame,
-            frames=self.num_frames,
-            interval=1000 / self.frames_per_second,
-            blit=True,
-        )
-
-    @abstractmethod
-    def setup(fig: plt.Figure):
-        """
-        Subclasses must implement this method to create the artists used in the animation.
-        """
-        pass
-
-    @abstractmethod
-    def update(time: float) -> list[artist.Artist]:
-        """
-        Subclasses must implement this method to update the artists.
-        The current real-world time is given as a parameter.
-        """
-        pass
-
-    def restart():
-        """
-        Subclasses may implement this method to reset their state when the animation restarts.
-        """
-        pass
-
-
-class OrbitsAnimation(TimeBasedAnimation):
-    """
-    This is the main animation class that visualizes the satellite orbits.
+    :param start_time: The start time of the animation.
+    :param end_time: The end time of the animation.
+    :param time_per_second: The time animated per second of animation.
+    :param frames_per_second: The number of frames per second of animation.
+    :return: A list of time values for the keyframes.
     """
 
-    background_img: np.ndarray
-    show_satellite_visibility: bool
+    num_frames = int((end_time - start_time) / time_per_second * frames_per_second)
+    return np.linspace(start_time, end_time, num_frames)
 
-    satellites: list[SatelliteRenderer]
-    grace: Optional[SatelliteRenderer]
 
-    def __init__(
-        self,
-        date: datetime.date,
-        from_hour: float,
-        to_hour: float,
-        show_satellite_visibility: bool,
-    ):
-        super().__init__(
-            time_range=(from_hour, to_hour),
-            time_per_second=2,  # 2 hours per second, so 1 day takes 12 seconds
-            frames_per_second=60,
-        )
+def create_animation(
+    frames_per_second: int,
+    keyframes: list[float],
+    novisibility: bool,
+    satellites: list[Satellite],
+    background_image: np.ndarray,
+) -> FuncAnimation:
+    """
+    Creates the animation.
 
-        # load the data used in this animation
-        background_image = load_background_image(date)
-        orbits = load_satellite_orbits(date)
+    :param animation_data: The data for the animation.
+    :param novisibility: Whether to hide the visibility of the satellites.
+    :param background_image: The background image to use.
+    :return: The animation.
+    """
 
-        # setup renderers for each satellite
-        satellites = []
-        for name, epochs in orbits.items():
-            satellite = SatelliteRenderer(name, epochs)
-            satellites.append(satellite)
+    fig = plt.figure(figsize=(10, 10))
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    ax.imshow(
+        background_image,
+        extent=[-180, 180, -90, 90],
+        transform=ccrs.PlateCarree(),
+    )
 
-        # find the grace satellite in the list, if it exists
-        grace = next(
-            (
-                satellite
-                for satellite in satellites
-                if satellite.type == SatelliteType.GRACE
-            ),
-            None,
-        )
+    for sat in satellites:
+        sat.setup_animation(ax)
 
-        self.show_satellite_visibility = show_satellite_visibility
-        self.background_img = background_image
-        self.satellites = satellites
-        self.grace = grace
+    grace = next(sat for sat in satellites if sat.is_grace)
 
-    def setup(self, fig: plt.Figure):
+    def update(frame: int) -> list[Artist]:
         """
-        Setup the animation by creating the projection, adding the background image,
-        then setup each satellite renderer.
+        Updates the animation to the given time.
+
+        :param time: The time to update the animation to.
+        :return: The artists to draw.
         """
 
-        ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
-        ax.set_global()
-        ax.imshow(
-            self.background_img,
-            extent=[-180, 180, -90, 90],
-            transform=ccrs.PlateCarree(),
-        )
+        print_progress("Rendering animation frames...", frame, len(keyframes))
 
-        for renderer in self.satellites:
-            renderer.setup(ax)
+        artists = []
 
-    def update(self, time: float) -> list[artist.Artist]:
-        """
-        On each frame update, draw the updated positions of each satellite,
-        then if `show_satellite_visibility` is enabled, draw the line of sight
-        between the GPS satellites and the GRACE satellite.
-        """
+        if not novisibility:
+            for sat in satellites:
+                artists += sat.update_visibility(frame, grace)
 
-        updated_artists = []
+        for sat in satellites:
+            artists += sat.update_position(frame)
 
-        for renderer in self.satellites:
-            updated_artists.extend(renderer.draw_tail(time))
+        return artists
 
-        if self.show_satellite_visibility and self.grace:
-            for renderer in self.satellites:
-                updated_artists.extend(renderer.draw_line_of_sight(self.grace))
-
-        return updated_artists
-
-    def restart(self):
-        for renderer in self.satellites:
-            renderer.restart()
+    return FuncAnimation(
+        fig,
+        update,
+        frames=len(keyframes),
+        interval=1000 / frames_per_second,
+        blit=True,
+    )
