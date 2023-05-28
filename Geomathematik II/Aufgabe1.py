@@ -13,7 +13,7 @@ x = ImmutableDenseMatrix(
     ]
 )
 
-dict = analyse_surface_curve(x, delta, lamda)
+dict = analyze_surface((delta, lamda), x)
 display("K", dict["K"])
 display("H", dict["H"])
 display("R1", dict["R1"])
