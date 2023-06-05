@@ -40,10 +40,8 @@ display("Geodätische Krümmung Parallelkreise", lamda_props["kappa_g"])
 setup_plot()
 plot_surface(
     lambdify((phi, lamda), f_surf.subs(R, 1)),
-    u_range=(-pi / 2, pi / 2),
-    v_range=(0, 2 * pi),
-    u_count=45,
-    v_count=45,
+    u_range=(-pi / 2, pi / 2, 45),
+    v_range=(0, 2 * pi, 45),
 )
 
 # %%

@@ -13,10 +13,8 @@ surface = Surface(
 )
 
 surface.plot(
-    u_range=(0, pi),
-    v_range=(0, 2 * pi),
-    u_count=45,
-    v_count=45,
+    u_range=(0, pi, 45),
+    v_range=(0, 2 * pi, 45),
 )
 
 # %%

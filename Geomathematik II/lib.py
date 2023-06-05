@@ -87,22 +87,20 @@ class Surface:
 
     def plot(
         self,
-        u_range=(-1, 1),
-        v_range=(-1, 1),
-        u_count=20,
-        v_count=20,
+        u_range=(-1, 1, 20),
+        v_range=(-1, 1, 20),
         subs={},
         close_surface=False,
     ):
         setup_plot()
         U, V = np.meshgrid(
-            np.linspace(*u_range, u_count),
-            np.linspace(*v_range, v_count),
+            np.linspace(*u_range),
+            np.linspace(*v_range),
         )
 
         f = lambdify((self.u, self.v), self.f.subs(subs))
 
-        X, Y, Z = f(U, V).reshape(3, u_count, v_count)
+        X, Y, Z = f(U, V).reshape(3, u_range[2], v_range[2])
 
         ax = plt.gca()
         if close_surface:
@@ -148,17 +146,16 @@ class Curve:
 
     def plot(
         self,
-        t_range=(-1, 1),
-        t_count=20,
+        t_range=(-1, 1, 20),
         subs={},
     ):
         setup_plot()
 
-        T = np.linspace(*t_range, t_count)
+        T = np.linspace(*t_range)
 
         f = lambdify((self.t), self.f.subs(subs))
 
-        X, Y, Z = f(T).reshape(3, t_count)
+        X, Y, Z = f(T).reshape(3, t_range[2])
         plt.gca().plot(X, Y, Z, color="red")
 
 

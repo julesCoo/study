@@ -32,10 +32,8 @@ display("Hauptkrümmungen am Pol", R1_pole, R2_pole)
 # simplifies to a**2 / b
 
 surface.plot(
-    u_range=(-pi / 2, pi / 2),
-    v_range=(0, 2 * pi),
-    u_count=45,
-    v_count=45,
+    u_range=(-pi / 2, pi / 2, 45),
+    v_range=(0, 2 * pi, 45),
     subs={a: 1, b: 2},
 )
 

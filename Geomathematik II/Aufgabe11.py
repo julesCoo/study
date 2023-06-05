@@ -35,14 +35,12 @@ f_sphere_nu = diff(f_sphere, nu).simplify()
 setup_plot()
 plot_surface(
     lambdify((nu, lam), f_sphere),
-    u_range=(0, np.pi),
-    v_range=(0, 2 * np.pi),
-    u_count=20,
-    v_count=40,
+    u_range=(0, np.pi, 20),
+    v_range=(0, 2 * np.pi, 40),
 )
 plot_line(
     lambdify((t), f_line),
-    t_range=(-np.pi / 2, np.pi / 2),
+    t_range=(-np.pi / 2, np.pi / 2, 100),
     t_count=100,
 )
 
