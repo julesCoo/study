@@ -3,11 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def setup_plot():
-    ax = plt.gca()
-    if ax.name == "3d":
-        return
-
+def setup_plot(size=1):
     """
     Setup a 3D plot with equal axes.
     """
@@ -17,6 +13,9 @@ def setup_plot():
     ax.set_ylabel("y")
     ax.set_zlabel("z")
     ax.set_box_aspect([1, 1, 1])
+    ax.set_xlim((-size, size))
+    ax.set_ylim((-size, size))
+    ax.set_zlim((-size, size))
 
 
 class Surface:
@@ -38,7 +37,7 @@ class Surface:
         # Flächennormalenvektor - steht senkrecht auf der Tangentialebene
         z = f_u.cross(f_v)
         z = z / z.norm()
-        z = z.simplify()
+        z = z.simplify().replace(Abs, Id)
 
         # Zweite Ableitung: Krümmungsrichtungen aus der Tangentialebene
         f_uu = diff(f_u, u).simplify()
@@ -85,6 +84,28 @@ class Surface:
         self.R1 = R1
         self.R2 = R2
 
+    def __str__(self):
+        return f"""\
+Surface:    
+    f(u,v) = {self.f}
+    f_u = {self.f_u}
+    f_v = {self.f_v}
+    z = {self.z}
+    f_uu = {self.f_uu}
+    f_uv = {self.f_uv}
+    f_vv = {self.f_vv}
+    E = {self.E}
+    F = {self.F}
+    G = {self.G}
+    L = {self.L}
+    M = {self.M}
+    N = {self.N}
+    H = {self.H}
+    K = {self.K}
+    R1 = {self.R1}
+    R2 = {self.R2}
+"""
+
     def plot(
         self,
         u_range=(-1, 1, 20),
@@ -92,7 +113,6 @@ class Surface:
         subs={},
         close_surface=False,
     ):
-        setup_plot()
         U, V = np.meshgrid(
             np.linspace(*u_range),
             np.linspace(*v_range),
@@ -149,8 +169,6 @@ class Curve:
         t_range=(-1, 1, 20),
         subs={},
     ):
-        setup_plot()
-
         T = np.linspace(*t_range)
 
         f = lambdify((self.t), self.f.subs(subs))

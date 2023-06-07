@@ -47,6 +47,7 @@ display("Geodätische Krümmung", sc.kappa_g)
 
 # Demnach ist die Schraubenlinie keine geodätische Linie.
 
+setup_plot(3)
 surface.plot(
     u_range=(-10, 10, 25),
     v_range=(0, 2 * np.pi, 25),

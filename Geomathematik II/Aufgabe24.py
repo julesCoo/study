@@ -9,7 +9,7 @@ from numpy import pi
 
 a, b = symbols("a b", real=True, positive=True)
 beta, lamda = symbols("beta lambda", real=True)
-
+Q
 surface = Surface(
     (beta, lamda),
     a * cos(beta) * cos(lamda),
