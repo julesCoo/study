@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+File: satellite.py
+Author: Daniel Ebert
+Date: 06.06.2023
+
+Description: 
+    This file deals with loading, preprocessing and rendering
+    data of a single satellite.
+"""
+
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
@@ -95,6 +106,7 @@ class Satellite:
             color=color,
             linewidth=0.5,
             transform=transform,
+            linestyle="dashed",
         )[0]
         self.velocity_vector = ax.plot(
             [],
@@ -145,7 +157,7 @@ class Satellite:
 
         # Calculate two (unit) vectors, one going from GRACE to nadir
         # (which is already the origin of the coordinate system),
-        # the other going from GRACE to the GPS satellite.
+        # the other going from the GPS satellite to GRACE.
         e1 = grace_pos
         e1 /= np.linalg.norm(e1)
         e2 = grace_pos - gps_pos

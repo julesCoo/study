@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+File: parser.py
+Author: Daniel Ebert
+Date: 06.06.2023
+
+Description:
+    This file configures the command line interface and 
+    deals with parsing the arguments into the `Args` class.
+"""
+
 import argparse
 import datetime
 from dataclasses import dataclass

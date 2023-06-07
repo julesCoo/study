@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+File: animation.py
+Author: Daniel Ebert
+Date: 06.06.2023
+
+Description:
+    This file manages the animation at a high level, without going into 
+    details about how the satellite orbits are rendered.
+"""
+
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from cartopy import crs as ccrs
@@ -69,7 +80,7 @@ def create_animation(
 
         artists = []
 
-        if not show_visibility:
+        if show_visibility:
             for sat in satellites:
                 artists += sat.update_visibility(frame, grace)
 

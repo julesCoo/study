@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+File: loader.py
+Author: Daniel Ebert
+Date: 06.06.2023
+
+Description:
+    This file deals with loading files from the FTP 
+    and caching them in the local `data` directory.
+"""
+
 from satellite import Satellite
 from datetime import datetime
 import numpy as np

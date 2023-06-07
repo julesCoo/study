@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+File: print.py
+Author: Daniel Ebert
+Date: 06.06.2023
+
+Description: 
+    This file contains some helper functions 
+    for printing to the console.
+"""
+
 import sys
 
 
