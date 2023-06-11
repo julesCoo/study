@@ -1,4 +1,6 @@
 # %%
+"Vorprozessierung"
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -6,7 +8,7 @@ import matplotlib.pyplot as plt
 df = pd.read_csv("data.csv")
 
 # In der Tabelle sind die Kreislagen 1 und 2 als eigene Zeilen jeweils
-# im Wechsel angeordnet. Zuerst müssen diese Messungen in eine Zeile
+# im Wechsel angeordnet. Zuerst müssen diese Messungen in ein Zeile
 # zusammengefasst werden.
 K1 = df[::2].reset_index(drop=True)
 K2 = df[1::2].reset_index(drop=True)
@@ -14,7 +16,8 @@ K2 = df[1::2].reset_index(drop=True)
 df = pd.DataFrame(
     {
         "index": range(0, 24),
-        "Messer": K1["Messer"],
+        "Satz": K1["Satz"],
+        "Beobachter": K1["Beobachter"],
         "Zielpunkt": K1["Zielpunkt"],
         "R1": K1["R"],
         "R2": K2["R"],
@@ -39,127 +42,187 @@ df["i"] = 1 / 2 * (400 - (df["zeta1"] + df["zeta2"]))
 df["zeta"] = 1 / 2 * (400 + (df["zeta1"] - df["zeta2"]))
 
 
-# c und i in mgon umrechnen
-df["c"] = 1000 * df["c"]
-df["i"] = 1000 * df["i"]
+# c und i in [cc] umrechnen
+df["c"] = 10000 * df["c"]
+df["i"] = 10000 * df["i"]
 
 # Ergebnisse speichern
 df.to_csv("results.csv", index=False)
 
-# Mittelwerte und Standardabweichungen berechnen
-c_mean = df["c"].mean()
-c_std = df["c"].std(ddof=1)
-i_mean = df["i"].mean()
-i_std = df["i"].std(ddof=1)
+# %%
+"Tabelle aller Abweichungen"
 
-print(f"Ziellinienfehler c: {c_mean:.3f} ± {c_std:.3f} mgon")
-print(f"Indexfehler i: {i_mean:.3f} ± {i_std:.3f} mgon")
+
+def as_typst_table(rows: list[dict]) -> str:
+    """
+    Format data as a table in Typst format.
+    :param rows: List of dicts with the same keys.
+    """
+    columns = rows[0].keys()
+    lines = [
+        "#table(",
+        f"  columns: {len(columns)},",
+        "  " + ",".join([f"[*{key}*]" for key in columns]) + ",",
+    ]
+    for row in rows:
+        lines += ["  " + ",".join([f"[{value}]" for value in row.values()]) + ","]
+    lines += ")"
+    return "\n".join(lines)
+
+
+def format_errors(df):
+    return as_typst_table(
+        [
+            {
+                "Satz": row["Satz"],
+                "Zielpunkt": row["Zielpunkt"],
+                "c [cc]": int(row["c"]),
+                "i [cc]": int(row["i"]),
+            }
+            for _, row in df.iterrows()
+        ]
+        + [
+            {
+                "Satz": "*Mittelwert*",
+                "Zielpunkt": "",
+                "c [cc]": int(df["c"].mean()),
+                "i [cc]": int(df["i"].mean()),
+            },
+            {
+                "Satz": "*Standardabweichung*",
+                "Zielpunkt": "",
+                "c [cc]": int(df["c"].std(ddof=1)),
+                "i [cc]": int(df["i"].std(ddof=1)),
+            },
+        ]
+    )
+
+
+print(format_errors(df[df["Satz"] <= 3]))
+print(format_errors(df[df["Satz"] > 3]))
 
 
 # %%
-def plot_error(column, title, color):
-    # Plot aufsetzen
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.set_xticks(df.index[::4])
-    ax.xlimits = (0, 24)
+"Tabellen der Mittelwerte"
 
-    # Unterteilung der x-Achse in 4er-Blocks - 6 Messdurchläufe
-    for x in range(0, 24, 4):
-        ax.axvline(
-            x=x,
-            linestyle="solid",
-            color="black",
-            alpha=0.5,
-            linewidth=2 if x == 12 else 1,
-        )
 
-    # Einzelmessfehler als Scatterplot
-    df.plot(
-        ax=ax,
-        kind="scatter",
-        x="index",
-        y=column,
-        color=color,
-        s=100,
+def format_means(df):
+    return as_typst_table(
+        [
+            {
+                "Zielpunkt": row["Zielpunkt"],
+                "Satz": row["Satz"],
+                "R [gon]": round(row["R"], 3),
+                "zeta [gon]": round(row["zeta"], 3),
+            }
+            for _, row in df.iterrows()
+        ]
     )
 
-    # Mittelwertlinie
+
+df = df.sort_values(by=["Zielpunkt", "Satz"])
+print(format_means(df[df["Satz"] <= 3]))
+print(format_means(df[df["Satz"] > 3]))
+
+# %%
+"Horizontalfehler Plots"
+
+zielpunkte = [1, 2, 3, 4]
+beobachter = ["Juliane Medl", "Daniel Ebert"]
+
+
+def plot_error(column, ylabel, filename):
+    fig, ax = plt.subplots(figsize=(8, 4))
+
     mean = df[column].mean()
-    ax.axhline(
-        y=mean,
-        linestyle="solid",
-        color=color,
-        linewidth=2,
-    )
 
-    # Standardabweichungslinien
-    std = df[column].std()
-    ax.axhline(
-        y=mean + std,
-        linestyle="dashed",
-        color=color,
-        linewidth=2,
-    )
-    ax.axhline(
-        y=mean - std,
-        linestyle="dashed",
-        color=color,
-        linewidth=2,
-    )
+    for z in zielpunkte:
+        y1 = df[(df["Zielpunkt"] == z) & (df["Beobachter"] == beobachter[0])][column]
+        y2 = df[(df["Zielpunkt"] == z) & (df["Beobachter"] == beobachter[1])][column]
 
-    ax.set_xlabel("Einzelmessung")
-    ax.set_ylabel("Fehler [mgon]")
-    ax.set_title(title)
+        width = 1 / 10
+
+        ax.bar(
+            [
+                z - width * 2.5,
+                z - width * 1.5,
+                z - width * 0.5,
+            ],
+            y1 - mean,
+            width * 0.9,
+            color="purple",
+            bottom=mean,
+        )
+        ax.bar(
+            [
+                z + width * 0.5,
+                z + width * 1.5,
+                z + width * 2.5,
+            ],
+            y2 - mean,
+            width * 0.9,
+            color="green",
+            bottom=mean,
+        )
+    ax.legend(beobachter)
+    ax.axhline(y=mean, linestyle="--", color="gray")
+    ax.set_xticks(zielpunkte)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel("Zielpunkt")
+    fig.savefig(filename, dpi=300)
 
 
-plot_error("c", "Ziellinienfehler c", "red")
-plt.savefig("c.png")
-
-plot_error("i", "Indexfehler i", "blue")
-plt.savefig("i.png")
-
-
-# %%
-
-import numpy as np
-
-# restore original df
-df = pd.read_csv("results.csv")
-d = 5
-filename = "scatter_4_6.png"
-
-# Ausreißer entfernen
-# df = df.drop(2)
-# df = df.drop(df[df["index"] >= 12].index)
-df = df.drop(df[df["index"] < 12].index)
-
-# Mittelwerte für R und zeta pro Zielpunkt
-mean_values = df.groupby("Zielpunkt").agg({"R": np.mean, "zeta": np.mean})
-
-# Abweichungen jeder Einzelmessung von den Mittelwerten
-dR = (df["R"] - df["Zielpunkt"].map(mean_values["R"])) * 1000
-dzeta = (df["zeta"] - df["Zielpunkt"].map(mean_values["zeta"])) * 1000
-
-# Scatterplot der Abweichungen, mit x=dR und y=dzeta
-fig, ax = plt.subplots(figsize=(7, 6))
-ax.set_xlabel("Abweichung R [mgon]")
-ax.set_ylabel("Abweichung $\zeta$ [mgon]")
-ax.axhline(y=0, color="black", linestyle="--", alpha=0.5)
-ax.axvline(x=0, color="black", linestyle="--", alpha=0.5)
-ax.set_xlim([-d, d])
-ax.set_ylim([-d, d])
-
-# Modify the scatter function to use different markers based on Kreislage
-scatter = ax.scatter(
-    dR,
-    dzeta,
-    s=250,
-    marker="+",
-    c=df["Zielpunkt"],
-    cmap="Accent",
-)
-
-ax.legend(*scatter.legend_elements(), loc="lower left", title="Zielpunkt")
-plt.savefig(filename)
+plot_error("c", "Ziellinienfehler c [cc]", "c.png")
+plot_error("i", "Indexfehler i [cc]", "i.png")
 
 # %%
+"Kreislagenmittel Plots"
+
+fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+
+# get the mean of R and zeta for each Zielpunkt. Ignore all other columms
+mean_values = df.groupby("Zielpunkt")[["R", "zeta"]].mean()
+
+for i, z in enumerate(zielpunkte):
+    R = mean_values.loc[z, "R"]
+    zeta = mean_values.loc[z, "zeta"]
+    d = 0.1
+    R = round(R, 1)
+    zeta = round(zeta, 1)
+
+    ax = axs[i // 2, i % 2]
+    ax.set_title(f"Zielpunkt {z}")
+    ax.set_aspect("equal")
+
+    xmin, xmax = R - d, R + d
+    ax.set_xlabel("R [gon]")
+    ax.set_xlim(xmin, xmax)
+    ax.set_xticks([xmin, xmax])
+
+    ymin, ymax = zeta - d, zeta + d
+    ax.set_ylabel("$\zeta$ [gon]")
+    ax.set_ylim(ymin, ymax)
+    ax.set_yticks([ymin, ymax])
+
+    data1 = df[(df["Zielpunkt"] == z) & (df["Beobachter"] == beobachter[0])]
+    data2 = df[(df["Zielpunkt"] == z) & (df["Beobachter"] == beobachter[1])]
+
+    ax.scatter(
+        data1["R"],
+        data1["zeta"],
+        color="purple",
+        marker="+",
+        s=200,
+    )
+    ax.scatter(
+        data2["R"],
+        data2["zeta"],
+        color="green",
+        marker="+",
+        s=200,
+    )
+
+    if i == 1:
+        ax.legend(beobachter)
+
+fig.savefig("Kreislagenmittel.png", dpi=300)

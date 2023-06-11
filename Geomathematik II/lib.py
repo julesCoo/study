@@ -26,43 +26,41 @@ class Surface:
         y,  # y(u,v)
         z,  # z(u,v)
     ):
-        (u, v) = symbols
+        u, v = symbols
 
         f = ImmutableDenseMatrix([x, y, z])
 
         # Erste Ableitung: Vektoren der Tangentialebene
-        f_u = diff(f, u).simplify()
-        f_v = diff(f, v).simplify()
+        f_u = diff(f, u)
+        f_v = diff(f, v)
 
         # Flächennormalenvektor - steht senkrecht auf der Tangentialebene
         z = f_u.cross(f_v)
         z = z / z.norm()
-        z = z.simplify().replace(Abs, Id)
+        z = z.replace(Abs, Id)
 
         # Zweite Ableitung: Krümmungsrichtungen aus der Tangentialebene
-        f_uu = diff(f_u, u).simplify()
-        f_uv = diff(f_u, v).simplify()
-        f_vv = diff(f_v, v).simplify()
+        f_uu = diff(f_u, u)
+        f_uv = diff(f_u, v)
+        f_vv = diff(f_v, v)
 
         # Erste Fundamentalform - beschreibt innere Geometrie
-        E = f_u.dot(f_u).simplify()
-        F = f_u.dot(f_v).simplify()
-        G = f_v.dot(f_v).simplify()
+        E = f_u.dot(f_u)
+        F = f_u.dot(f_v)
+        G = f_v.dot(f_v)
 
         # Zweite Fundamentalform
-        L = f_uu.dot(z).simplify()
-        M = f_uv.dot(z).simplify()
-        N = f_vv.dot(z).simplify()
+        L = f_uu.dot(z)
+        M = f_uv.dot(z)
+        N = f_vv.dot(z)
 
         # Mittlere Krümmung
-        H = ((E * N - 2 * F * M + G * L) / (2 * (E * G - F**2))).simplify()
-
+        H = (E * N - 2 * F * M + G * L) / (2 * (E * G - F**2))
         # Gaußsche Krümmung
-        K = ((L * N - M**2) / (E * G - F**2)).simplify()
-
+        K = (L * N - M**2) / (E * G - F**2)
         # Hauptkrümmungsradien (Achtung Krümmung ist 1/R)
-        R1 = (1 / (H + sqrt(H**2 - K))).simplify()
-        R2 = (1 / (H - sqrt(H**2 - K))).simplify()
+        R1 = 1 / (H + sqrt(H**2 - K))
+        R2 = 1 / (H - sqrt(H**2 - K))
 
         self.u = u
         self.v = v
@@ -84,34 +82,13 @@ class Surface:
         self.R1 = R1
         self.R2 = R2
 
-    def __str__(self):
-        return f"""\
-Surface:    
-    f(u,v) = {self.f}
-    f_u = {self.f_u}
-    f_v = {self.f_v}
-    z = {self.z}
-    f_uu = {self.f_uu}
-    f_uv = {self.f_uv}
-    f_vv = {self.f_vv}
-    E = {self.E}
-    F = {self.F}
-    G = {self.G}
-    L = {self.L}
-    M = {self.M}
-    N = {self.N}
-    H = {self.H}
-    K = {self.K}
-    R1 = {self.R1}
-    R2 = {self.R2}
-"""
-
     def plot(
         self,
         u_range=(-1, 1, 20),
         v_range=(-1, 1, 20),
         subs={},
         close_surface=False,
+        **kwargs,
     ):
         U, V = np.meshgrid(
             np.linspace(*u_range),
@@ -124,8 +101,8 @@ Surface:
 
         ax = plt.gca()
         if close_surface:
-            ax.plot_surface(X, Y, Z, color="blue", alpha=1.0)
-        ax.plot_wireframe(X, Y, Z, color="black", alpha=0.1)
+            ax.plot_surface(X, Y, Z, **kwargs)
+        ax.plot_wireframe(X, Y, Z, **kwargs)
 
 
 class Curve:
@@ -140,20 +117,20 @@ class Curve:
         f = ImmutableDenseMatrix([x, y, z])
 
         # Erste Ableitung: Vektor der Tangentialebene
-        f_t = diff(f, t).simplify()
+        f_t = diff(f, t)
 
         # Zweite Ableitung: Krümmungsrichtung aus der Tangentialebene
-        f_tt = diff(f_t, t).simplify()
+        f_tt = diff(f_t, t)
 
         # Normalenvektor
-        n = (f_tt / f_tt.norm()).simplify()
+        n = f_tt / f_tt.norm()
 
         # Krümmung
-        k = (f_t.norm() / f_t.cross(diff(f_t, t)).norm()).simplify()
+        k = f_t.norm() / f_t.cross(diff(f_t, t)).norm()
 
         # Hauptkrümmungsradien (Achtung Krümmung ist 1/R)
-        R1 = (1 / k).simplify()
-        R2 = (1 / k).simplify()
+        R1 = 1 / k
+        R2 = 1 / k
 
         self.t = t
         self.f = f
@@ -183,18 +160,18 @@ class SurfaceCurve:
         surface,  # Surface
         curve,  # Curve
     ):
-        v = acos(curve.n.dot(surface.z)).simplify()
+        v = acos(curve.n.dot(surface.z))
 
         # Seitenvektor
-        s = surface.z.cross(curve.f_t).simplify()
+        s = surface.z.cross(curve.f_t)
 
         # Normalkrümmung
-        # kappa_n = (curve["kappa"] * cos(v)).simplify()
-        kappa_n = curve.f_tt.dot(surface.z).simplify()
+        # kappa_n = (curve["kappa"] * cos(v))
+        kappa_n = curve.f_tt.dot(surface.z)
 
         # Geodätische Krümmung
-        # kappa_g = (curve["kappa"] * sin(v)).simplify()
-        kappa_g = curve.f_tt.dot(s).simplify()
+        # kappa_g = (curve["kappa"] * sin(v))
+        kappa_g = curve.f_tt.dot(s)
 
         self.surface = surface
         self.curve = curve
